@@ -3,10 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiService {
-  // Free OpenRouteService API Key
   static String get _orsApiKey => dotenv.env['ORS_API_KEY'] ?? '';
 
-  /// Searches for locations using Nominatim (OpenStreetMap)
   Future<List<Map<String, dynamic>>> searchLocations(String query) async {
     try {
       if (query.isEmpty) return [];
@@ -31,7 +29,7 @@ class ApiService {
     }
   }
 
-  /// Fetches address from coordinates using Nominatim Reverse Geocoding
+
   Future<String?> getAddressFromCoords(double lat, double lon) async {
     try {
       final url = Uri.parse(
@@ -53,8 +51,7 @@ class ApiService {
     }
   }
 
-  /// Fetches road distance (in KM) between two points using OpenRouteService
-  /// Accepts any object with .latitude and .longitude or a Map
+
   Future<double> getRoadDistance(dynamic origin, dynamic destination) async {
     try {
       final double startLat = origin.latitude;
@@ -73,9 +70,8 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        // Distance is returned in meters
         final double distanceMeters = data['features'][0]['properties']['summary']['distance'];
-        return distanceMeters / 1000.0; // Convert to KM
+        return distanceMeters / 1000.0;
       } else {
         print('ORS API Error: ${response.statusCode} - ${response.body}');
         return -1;
@@ -102,7 +98,6 @@ class ApiService {
           final name = tags['name'] ?? tags['brand'] ?? 'Auto Dealership';
           final brand = tags['brand'] ?? tags['operator'] ?? 'Various';
           
-          // Better address parsing
           List<String> addressParts = [];
           if (tags['addr:housenumber'] != null) addressParts.add(tags['addr:housenumber']);
           if (tags['addr:street'] != null) addressParts.add(tags['addr:street']);

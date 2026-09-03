@@ -18,7 +18,6 @@ class CarApiService {
     'Accept': 'application/json',
   };
 
-  /// Verified 100% Accurate Master Image Map for Malaysian market cars
   static const Map<String, String> masterCarImages = {
     'perodua_bezza': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/2020_Perodua_Bezza_1.3_AV_%28facelift%29_in_Penang%2C_Malaysia.jpg/800px-2020_Perodua_Bezza_1.3_AV_%28facelift%29_in_Penang%2C_Malaysia.jpg',
     'perodua_myvi': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/2018_Perodua_Myvi_1.5_Advance_in_Penang%2C_Malaysia.jpg/800px-2018_Perodua_Myvi_1.5_Advance_in_Penang%2C_Malaysia.jpg',
@@ -60,17 +59,14 @@ class CarApiService {
     'mitsubishi_xpander': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/2020_Mitsubishi_Xpander_1.5_in_Penang%2C_Malaysia.jpg/800px-2020_Mitsubishi_Xpander_1.5_in_Penang%2C_Malaysia.jpg',
   };
 
-  /// Automatically scrapes/fetches a high-quality real car image URL based on car name (make + model)
-  /// Uses Master Image Map first, with Wikipedia precise REST API fallback
+
   Future<String?> fetchCarImageUrl(String make, String model) async {
-    // 0. Instant Accurate Match via Master Map
     final key = '${make.toLowerCase().trim()}_${model.toLowerCase().trim()}';
     if (masterCarImages.containsKey(key)) {
       String url = masterCarImages[key]!;
-      return url; // Universally fix the size
+      return url;
     }
 
-    // 1. Primary Strategy: Wikipedia Page Summary REST API (Fastest & 100% Accurate)
     final formattedTitle = '${make}_$model'.replaceAll(' ', '_');
     try {
       final summaryUrl = Uri.parse('https://en.wikipedia.org/api/rest_v1/page/summary/$formattedTitle');
@@ -89,7 +85,6 @@ class CarApiService {
       debugPrint('Wiki summary failed for $formattedTitle: $e');
     }
 
-    // 2. Secondary Strategy: Model name only (Also 100% accurate usually)
     try {
       final modelTitle = model.replaceAll(' ', '_');
       final summaryUrl = Uri.parse('https://en.wikipedia.org/api/rest_v1/page/summary/$modelTitle');
@@ -108,17 +103,15 @@ class CarApiService {
       debugPrint('Wiki model-only summary failed for $model: $e');
     }
 
-    // 3. Safe Fallback: If not found, return null to show generic placeholder.
-    // We NO LONGER use fuzzy search to avoid wrong cars (like Mustang for Fiesta).
+
     return null;
   }
 
-  /// Self-healing: ensures every car has an exact and valid high-resolution image URL
+
   List<CarModel> healCarImages(List<CarModel> cars) {
     return cars.map((car) {
       String? safeUrl = car.imageUrl;
 
-      // Purge victim cars of the old "Chery Omoda 5" fallback bug
       if (safeUrl != null && safeUrl.contains('Chery_Omoda_5') && !car.make.toLowerCase().contains('chery')) {
         safeUrl = null;
       }
@@ -136,7 +129,6 @@ class CarApiService {
     }).toList();
   }
 
-  /// Read cars from local cached JSON file in device app sandbox
   Future<List<CarModel>> getCachedCars() async {
     try {
       final file = await _getLocalCacheFile();
@@ -146,7 +138,6 @@ class CarApiService {
           final List<dynamic> jsonList = json.decode(content);
           final cars = jsonList.map((e) => CarModel.fromJson(Map<String, dynamic>.from(e))).toList();
           
-          // Invalidate legacy cache if it contains duplicate stale placeholder URLs
           final staleCount = cars.where((c) => c.imageUrl != null && c.imageUrl!.contains('photo-1549399542-7e3f8b79c341')).length;
           if (staleCount > 2) {
             debugPrint('Detected $staleCount cars with stale legacy placeholder. Invalidating old cache.');
@@ -166,7 +157,6 @@ class CarApiService {
     return [];
   }
 
-  /// Save cars to local persistent JSON file
   Future<void> saveCarsToCache(List<CarModel> cars) async {
     try {
       final file = await _getLocalCacheFile();
@@ -182,13 +172,11 @@ class CarApiService {
     }
   }
 
-  /// Helper: get the local file path in app support/document directory
   Future<File> _getLocalCacheFile() async {
     final dir = await getApplicationDocumentsDirectory();
     return File('${dir.path}/$_cacheFileName');
   }
 
-  /// Get the timestamp of the last successful sync
   Future<DateTime?> getLastSyncTime() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -202,7 +190,6 @@ class CarApiService {
     return null;
   }
 
-  /// Batch enrich car list by automatically scraping images for missing ones
   Future<List<CarModel>> enrichCarsWithImages(
     List<CarModel> rawCars, {
     void Function(int current, int total)? onProgress,
@@ -224,22 +211,16 @@ class CarApiService {
       }
     }
 
-    // Persist immediately to save quota
     await saveCarsToCache(enriched);
 
-    // Asynchronously sync enriched URLs to Supabase if table exists
     _syncToSupabaseSilently(enriched);
 
     return enriched;
   }
 
-  /// Silently update Supabase records in background
   void _syncToSupabaseSilently(List<CarModel> cars) async {
     try {
-      // Since ON CONFLICT requires a unique constraint the user doesn't have,
-      // we will just insert missing cars, and update existing ones manually, or skip.
-      // To keep it simple, we just ignore the DB sync error for now since the UI is cached.
-      // Or we can just do nothing for background sync if it causes crashes.
+
       for (var car in cars) {
         if (car.imageUrl != null && car.imageUrl!.isNotEmpty) {
            await _supabase.from('cars').update({

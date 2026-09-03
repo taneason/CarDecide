@@ -69,18 +69,16 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
     if (carId == null) return;
 
     final wasFavourite = _isFavourite;
-    setState(() => _isFavourite = !_isFavourite); // Optimistic UI update
+    setState(() => _isFavourite = !_isFavourite);
 
     try {
       if (wasFavourite) {
-        // Remove from favourites
         await _supabase
             .from('favourite_indicators')
             .delete()
             .eq('user_id', user.id)
             .eq('car_id', carId);
       } else {
-        // Add to favourites
         await _supabase.from('favourite_indicators').insert({
           'user_id': user.id,
           'car_id': carId,
@@ -88,7 +86,6 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
       }
     } catch (e) {
       debugPrint('Error toggling favourite: $e');
-      // Revert optimistic update on failure
       if (mounted) {
         setState(() => _isFavourite = wasFavourite);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -197,7 +194,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                     height: 50,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1E293B), // Dark secondary color to match app
+                        backgroundColor: const Color(0xFF1E293B),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         elevation: 4,
                         shadowColor: Colors.black26,

@@ -521,7 +521,6 @@ class _CarBrowseScreenState extends State<CarBrowseScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Car Real Image / Thumbnail (Cached Locally)
               ClipRRect(
                 borderRadius: BorderRadius.circular(14),
                 child: Container(

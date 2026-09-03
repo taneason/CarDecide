@@ -49,7 +49,6 @@ class MainScreenState extends State<MainScreen> {
     setState(() {
       _currentIndex = 1;
     });
-    // Add small delay to ensure the widget is built if it hasn't been yet
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _compareKey.currentState?.setCars(cars);
     });

@@ -64,8 +64,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       final response = await _authService.signUp(email, password);
       
-      // Supabase prevents email enumeration by returning a fake user with empty identities
-      // if the email is already registered. We catch it here to show the error.
+
       if (response.user != null && response.user!.identities != null && response.user!.identities!.isEmpty) {
         throw Exception('already registered');
       }

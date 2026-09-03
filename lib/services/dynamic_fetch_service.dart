@@ -53,7 +53,7 @@ class DynamicFetchService {
       if (response.text == null || response.text!.isEmpty) return null;
 
       String jsonText = response.text!.trim();
-      // Clean up markdown code blocks if any
+
       if (jsonText.startsWith('```json')) jsonText = jsonText.substring(7);
       if (jsonText.startsWith('```')) jsonText = jsonText.substring(3);
       if (jsonText.endsWith('```')) jsonText = jsonText.substring(0, jsonText.length - 3);
@@ -69,7 +69,7 @@ class DynamicFetchService {
       
       final supabase = Supabase.instance.client;
       
-      // Check for deduplication
+
       final existingResponse = await supabase
           .from('cars')
           .select()
@@ -84,7 +84,7 @@ class DynamicFetchService {
       
       String? imageUrl = await _carApiService.fetchCarImageUrl(make, model);
 
-      // Default placeholder if Wikipedia fails completely
+
       imageUrl ??= 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&q=80&w=800';
 
       final car = CarModel(
@@ -100,12 +100,11 @@ class DynamicFetchService {
       );
 
       final map = car.toSupabaseMap();
-      map.remove('motor_power'); // Ensure motor_power is not sent as it doesn't exist in schema
+      map.remove('motor_power');
       
       final insertResponse = await supabase.from('cars').insert(map).select().single();
       final savedCar = CarModel.fromJson(insertResponse);
       
-      // Also save to local cache so we don't lose it immediately
       final cachedCars = await _carApiService.getCachedCars();
       cachedCars.add(savedCar);
       await _carApiService.saveCarsToCache(cachedCars);
@@ -156,7 +155,6 @@ class DynamicFetchService {
       Do not include markdown blocks like ```json. Just return the raw JSON.
       ''';
 
-      // Use gemini-1.5-flash as it supports multimodal (images) natively
       final visionModel = GenerativeModel(
         model: 'gemini-3.1-flash-lite',
         apiKey: _apiKey,
@@ -187,7 +185,6 @@ class DynamicFetchService {
       
       final supabase = Supabase.instance.client;
       
-      // Check for deduplication
       final existingResponse = await supabase
           .from('cars')
           .select()

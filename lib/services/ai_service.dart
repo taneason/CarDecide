@@ -32,7 +32,7 @@ class AiService {
       if (dataContext != null) {
         finalMessage = "CAR DATA CONTEXT (Registration Trends/Prices):\n$dataContext\n\nUSER QUESTION: $userMessage";
       } else {
-        // Automatically inject MockData context if not provided
+
         finalMessage = "CAR DATA CONTEXT:\n${_getMockDataContext()}\n\nUSER QUESTION: $userMessage";
       }
       

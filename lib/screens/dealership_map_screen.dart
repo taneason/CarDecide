@@ -20,9 +20,7 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
   final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
 
-  // The center used to load dealerships (either user location or searched place)
   LatLng _searchCenter = const LatLng(3.1390, 101.6869);
-  // Actual user GPS location (blue dot)
   LatLng? _userLocation;
 
   bool _isLoadingLocation = true;
@@ -32,7 +30,7 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
 
   List<Map<String, dynamic>> _dealerships = [];
   List<Map<String, dynamic>> _searchSuggestions = [];
-  String? _searchedPlaceName; // Label shown under search bar
+  String? _searchedPlaceName;
 
   @override
   void initState() {
@@ -46,7 +44,7 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
     super.dispose();
   }
 
-  // ── Location ──────────────────────────────────────────────────────────────
+
 
   Future<void> _determinePosition() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -78,7 +76,7 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
     }
   }
 
-  // ── Dealership loading ────────────────────────────────────────────────────
+
 
   Future<void> _loadDealerships() async {
     setState(() {
@@ -100,7 +98,7 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
     }
   }
 
-  // ── Geocoding search (Nominatim, same as transit comparator) ─────────────
+
 
   Future<void> _searchLocation(String query) async {
     if (query.trim().isEmpty) {
@@ -127,7 +125,6 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
         });
       }
     } catch (_) {
-      // silent fail
     } finally {
       if (mounted) setState(() => _isSearching = false);
     }
@@ -135,7 +132,6 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
 
   void _selectSuggestion(Map<String, dynamic> suggestion) {
     final newCenter = LatLng(suggestion['lat'], suggestion['lng']);
-    // Shorten the displayed name (first two comma-separated parts)
     final parts = (suggestion['name'] as String).split(',');
     final shortName = parts.take(2).join(',').trim();
 
@@ -156,7 +152,6 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
       _searchController.clear();
       _searchSuggestions = [];
       _searchedPlaceName = null;
-      // Reset to user location if available
       if (_userLocation != null) {
         _searchCenter = _userLocation!;
         _mapController.move(_searchCenter, 13.0);
@@ -165,7 +160,6 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
     });
   }
 
-  // ── Google Maps deep link ─────────────────────────────────────────────────
 
   Future<void> _openInGoogleMaps(Map<String, dynamic> dealer) async {
     final lat = dealer['lat'];
@@ -192,7 +186,6 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
     }
   }
 
-  // ── Bottom sheet ──────────────────────────────────────────────────────────
 
   void _showDealerInfo(Map<String, dynamic> dealer) {
     final bool hasAddress = dealer['location'] != null &&
@@ -366,7 +359,6 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
     );
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
 
   void _zoom(double delta) {
     final currentZoom = _mapController.camera.zoom;
@@ -407,7 +399,6 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
     );
   }
 
-  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -422,7 +413,7 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
         ),
       body: Stack(
         children: [
-          // ── Map ──────────────────────────────────────────────────────────
+
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
@@ -485,7 +476,6 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
             ],
           ),
 
-          // ── Search bar overlay ────────────────────────────────────────
           Positioned(
               top: 10,
               left: 12,
@@ -596,10 +586,8 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
               ),
             ),
 
-          // ── Map tool buttons (identical layout to Transit Comparator) ────
           _buildMapControls(),
 
-          // ── Loading overlay ───────────────────────────────────────────────
           if (_isLoadingLocation || _isLoadingDealers)
             Center(
               child: Card(
@@ -634,7 +622,6 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
     );
   }
 
-  // ── Map controls widget (always visible, no toggle/fullscreen) ──────────
   Widget _buildMapControls() {
     return Positioned(
       bottom: 16,

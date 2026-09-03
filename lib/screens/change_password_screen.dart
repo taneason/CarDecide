@@ -44,7 +44,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       final user = _authService.currentUser;
       if (user == null || user.email == null) throw Exception("User not logged in");
 
-      // Verify current password by attempting to sign in
       final authResponse = await _supabase.auth.signInWithPassword(
         email: user.email!,
         password: _currentPasswordController.text,
@@ -54,7 +53,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
          throw Exception("Current password is incorrect");
       }
 
-      // If successful, update the password
       await _supabase.auth.updateUser(UserAttributes(
         password: _newPasswordController.text,
       ));
@@ -116,7 +114,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               ),
               const SizedBox(height: 32),
 
-              // Current Password
               _buildPasswordField(
                 label: 'Current Password',
                 controller: _currentPasswordController,
@@ -129,7 +126,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               ),
               const SizedBox(height: 20),
 
-              // New Password
               _buildPasswordField(
                 label: 'New Password',
                 controller: _newPasswordController,
@@ -142,7 +138,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Confirm Password
               _buildPasswordField(
                 label: 'Confirm New Password',
                 controller: _confirmPasswordController,
@@ -155,7 +150,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               ),
               const SizedBox(height: 40),
 
-              // Submit Button
               SizedBox(
                 width: double.infinity,
                 height: 56,

@@ -101,7 +101,6 @@ class ProfileScreenState extends State<ProfileScreen> {
       ),
     );
 
-    // If sheet returned true (saved successfully), refresh the page
     if (result == true && mounted) {
       await _fetchProfile();
       if (mounted) {
@@ -151,7 +150,6 @@ class ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  // Avatar & Header
                   Center(
                     child: Column(
                       children: [
@@ -184,7 +182,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 32),
                   
-                  // Stats Row
+
                   Row(
                     children: [
                       _buildStatItem(
@@ -224,7 +222,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 40),
                   ],
                   
-                  // Action Buttons
+
                   if (user != null)
                     SizedBox(
                       width: double.infinity,
@@ -326,9 +324,7 @@ class ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-// ── Separate StatefulWidget for the Edit Profile bottom sheet ────────────────
-// Using a dedicated widget avoids the GlobalKey conflict that occurs when
-// StatefulBuilder triggers setState while a Form key is still registered.
+
 class _EditProfileSheet extends StatefulWidget {
   final String initialName;
   final String? avatarUrl;
@@ -421,7 +417,6 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     try {
       String? newAvatarUrl = widget.avatarUrl;
 
-      // 1. Upload new avatar if selected
       if (_selectedImage != null) {
         final ext = _selectedImage!.path.split('.').last;
         final fileName = '${widget.userId}_${DateTime.now().millisecondsSinceEpoch}.$ext';
@@ -430,7 +425,6 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
         newAvatarUrl = _supabase.storage.from('avatars').getPublicUrl(fileName);
       }
 
-      // 2. Update profile data
       await _supabase.from('profiles').update({
         'full_name': _nameController.text.trim(),
         if (_selectedImage != null) 'avatar_url': newAvatarUrl,
@@ -453,7 +447,6 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // Determine which image to show
     ImageProvider? currentAvatar;
     if (_selectedImage != null) {
       currentAvatar = FileImage(_selectedImage!);
@@ -464,7 +457,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
-        top: MediaQuery.of(context).padding.top + 20, // max height safety
+        top: MediaQuery.of(context).padding.top + 20,
       ),
       child: Container(
         decoration: const BoxDecoration(
@@ -479,7 +472,6 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Handle bar
                 Center(
                   child: Container(
                     width: 40,
@@ -501,7 +493,6 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                 ),
                 const SizedBox(height: 24),
 
-              // Avatar preview (Tap to change)
               Center(
                 child: InkWell(
                   onTap: _pickImage,
@@ -541,7 +532,6 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
               ),
               const SizedBox(height: 32),
 
-              // Display name field
               const Text(
                 'Display Name',
                 style: TextStyle(
@@ -588,7 +578,6 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
               ),
               const SizedBox(height: 32),
 
-              // Save button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(

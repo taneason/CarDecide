@@ -39,11 +39,10 @@ class DecisionSummaryScreen extends StatelessWidget {
   }
 
   Widget _buildSummaryCard(Map<String, dynamic> car) {
-    // Basic calculation for summary
     double price = (car['price'] as num).toDouble();
-    double monthlyLoan = (price * 0.9 * 1.03 * 7) / (7 * 12); // Mock: 90% loan, 3% interest, 7 years
-    double monthlyFuel = car['isEV'] ? 80 : 350; // Mock estimates
-    double total = monthlyLoan + monthlyFuel + 20; // + roadtax/misc
+    double monthlyLoan = (price * 0.9 * 1.03 * 7) / (7 * 12);
+    double monthlyFuel = car['isEV'] ? 80 : 350;
+    double total = monthlyLoan + monthlyFuel + 20;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),

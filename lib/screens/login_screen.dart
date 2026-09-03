@@ -164,7 +164,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         Navigator.push(context, MaterialPageRoute(builder: (context) => OtpVerificationScreen(email: _emailController.text, isLogin: true)));
                       }
                     } catch (e) {
-                      // Fake jump to prevent account enumeration
                       if (mounted) {
                         Navigator.push(context, MaterialPageRoute(builder: (context) => OtpVerificationScreen(email: _emailController.text, isLogin: true)));
                       }
@@ -326,7 +325,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-              // Official Google Login Button
               _buildSocialButton(
                 onPressed: _isLoading ? null : _handleGoogleSignIn,
                 icon: Image.asset(
@@ -339,7 +337,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 borderColor: Colors.grey.shade300,
               ),
               const SizedBox(height: 16),
-              // Guest Login Button
               SizedBox(
                 width: double.infinity,
                 height: 56,

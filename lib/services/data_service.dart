@@ -12,13 +12,11 @@ class DataService {
   final _supabase = Supabase.instance.client;
   final CarApiService _carApiService = CarApiService();
 
-  /// Fetches the latest fuel prices from data.gov.my
   Future<Map<String, dynamic>> fetchLatestFuelPrices() async {
     final prefs = await SharedPreferences.getInstance();
     final cachedDataString = prefs.getString('fuel_prices_data');
     final cachedTimestamp = prefs.getInt('fuel_prices_timestamp') ?? 0;
 
-    // Cache valid for 12 hours (43200000 milliseconds)
     final bool isCacheValid = (DateTime.now().millisecondsSinceEpoch - cachedTimestamp) < 43200000;
 
     if (cachedDataString != null && isCacheValid) {
@@ -65,14 +63,14 @@ class DataService {
       debugPrint('Error fetching fuel prices from network: $e');
     }
 
-    // Network failed, try to use expired cache as a fallback to prevent crash
+
     if (cachedDataString != null) {
       try {
         return Map<String, dynamic>.from(json.decode(cachedDataString));
       } catch (_) {}
     }
 
-    // Ultimate Fallback
+
     return {
       'RON95 (Floating)': 3.82,
       'RON97': 4.30,
@@ -91,13 +89,9 @@ class DataService {
     return (value as num).toDouble();
   }
 
-  /// Fetches car data using Cache-First strategy to minimize API usage
-  /// Priority:
-  /// 1. Local Persistent Cache File (Instant 0ms, 0 API quota)
-  /// 2. Remote Supabase Database
-  /// 3. Local bundled assets/data/cars.json
+
   Future<List<CarModel>> fetchCars({bool forceRefresh = false}) async {
-    // 1. LOCAL PERSISTENT CACHE (Tier 1)
+
     if (!forceRefresh) {
       final cachedCars = await _carApiService.getCachedCars();
       if (cachedCars.isNotEmpty) {
@@ -108,7 +102,6 @@ class DataService {
 
     List<CarModel> carList = [];
 
-    // 2. FETCH FROM SUPABASE (Tier 2)
     try {
       final List<dynamic> supabaseData = await _supabase
           .from('cars')
@@ -123,7 +116,6 @@ class DataService {
       debugPrint('Supabase car fetch failed or table not found: $e');
     }
 
-    // 3. FALLBACK TO ASSET JSON (Tier 3)
     if (carList.isEmpty) {
       try {
         final String response = await rootBundle.loadString('assets/data/cars.json');
@@ -135,22 +127,17 @@ class DataService {
       }
     }
 
-    // Always heal images to ensure 100% accurate pictures for all models
     carList = _carApiService.healCarImages(carList);
 
-    // Save healed cars to local persistent storage immediately
     await _carApiService.saveCarsToCache(carList);
 
-    // Save/Sync directly to your Supabase database in background
     saveCarsToSupabase(carList);
 
     return carList;
   }
 
-  /// Saves the complete list of cars with accurate photos directly into Supabase database
   Future<void> saveCarsToSupabase(List<CarModel> cars) async {
     try {
-      // First, get existing cars to avoid duplicates since there's no unique constraint
       final existingData = await _supabase.from('cars').select('make, model');
       final existingKeys = existingData.map((e) => '${e['make']}_${e['model']}').toSet();
 
@@ -159,7 +146,7 @@ class DataService {
       if (newCars.isNotEmpty) {
         final List<Map<String, dynamic>> records = newCars.map((c) {
           final map = c.toSupabaseMap();
-          map.remove('motor_power'); // Ensure motor_power is not sent as it doesn't exist in schema
+          map.remove('motor_power');
           return map;
         }).toList();
         
@@ -173,13 +160,11 @@ class DataService {
     }
   }
 
-  /// Backward-compatible method returning a list of dynamic maps
   Future<List<Map<String, dynamic>>> fetchCarsAsMap() async {
     final cars = await fetchCars();
     return cars.map((c) => c.toJson()).toList();
   }
 
-  /// Force a fresh sync & image enrichment
   Future<List<CarModel>> forceSyncAndEnrichImages({void Function(int, int)? onProgress}) async {
     final baseCars = await fetchCars(forceRefresh: true);
     final enriched = await _carApiService.enrichCarsWithImages(baseCars, onProgress: onProgress);
@@ -187,26 +172,20 @@ class DataService {
     return enriched;
   }
 
-  /// FACTORY RESET: Deletes all cars in Supabase and local cache, then reseeds from clean JSON.
   Future<void> factoryResetDatabase() async {
     try {
       debugPrint('Starting Factory Reset...');
-      // 1. Delete all records from Supabase (by matching make not equal to 'IMPOSSIBLE_VALUE')
       await _supabase.from('cars').delete().neq('make', 'IMPOSSIBLE_VALUE');
       
-      // 2. Clear local cache file
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('car_data_last_sync_timestamp');
       
-      // 3. Load from freshly cleaned local JSON
       final String response = await rootBundle.loadString('assets/data/cars.json');
       final List<dynamic> data = json.decode(response);
       List<CarModel> carList = data.map((e) => CarModel.fromJson(Map<String, dynamic>.from(e))).toList();
       
-      // 4. Run through the healer to ensure 320px
       carList = _carApiService.healCarImages(carList);
       
-      // 5. Force insert into Supabase
       final List<Map<String, dynamic>> records = carList.map((c) {
         final map = c.toSupabaseMap();
         map.remove('motor_power');
@@ -214,7 +193,6 @@ class DataService {
       }).toList();
       await _supabase.from('cars').insert(records);
       
-      // 6. Save to local cache
       await _carApiService.saveCarsToCache(carList);
       debugPrint('Factory Reset Complete! Inserted ${records.length} clean cars.');
     } catch (e) {

@@ -13,20 +13,18 @@ class OwnershipCalculators extends StatefulWidget {
 class _OwnershipCalculatorsState extends State<OwnershipCalculators> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   
-  // Loan Calculator State
   final _priceController = TextEditingController();
   final _downpaymentController = TextEditingController();
   final _interestController = TextEditingController();
   final _tenureController = TextEditingController();
   double _monthlyInstalment = 0;
 
-  // Road Tax Calculator State
   final _ccController = TextEditingController();
-  final _powerController = TextEditingController(); // kW for EV
-  String _fuelType = 'Petrol/Diesel'; // Petrol/Diesel, EV
-  String _region = 'Peninsular Malaysia'; // Peninsular, Sabah, Sarawak, Special Regions
-  String _ownership = 'Private'; // Private, Company
-  String _bodyType = 'Saloon'; // Saloon, Non-Saloon
+  final _powerController = TextEditingController();
+  String _fuelType = 'Petrol/Diesel';
+  String _region = 'Peninsular Malaysia';
+  String _ownership = 'Private';
+  String _bodyType = 'Saloon';
   double _roadTax = 0;
 
   @override
@@ -57,30 +55,28 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
   }
 
   double _calculateEVTax(double kw) {
-    // Latest 2026 EV Road Tax Rates (Official JPJ)
-    // Motor Power (kW) : Rate
+
     if (kw <= 50.0) return 20.0;
     if (kw <= 60.0) return 30.0;
     if (kw <= 70.0) return 40.0;
     if (kw <= 80.0) return 50.0;
     if (kw <= 90.0) return 60.0;
     if (kw <= 100.0) return 70.0;
-    
-    // Grouping for higher power
+
     if (kw <= 110.0) return 80.0;
     if (kw <= 120.0) return 90.0;
     if (kw <= 130.0) return 100.0;
     if (kw <= 140.0) return 110.0;
     if (kw <= 150.0) return 120.0;
     
-    // Progressive tiers above 150kW
+
     if (kw <= 160.0) return 135.0;
     if (kw <= 170.0) return 150.0;
     if (kw <= 180.0) return 165.0;
     if (kw <= 190.0) return 180.0;
     if (kw <= 200.0) return 195.0;
     
-    // Tiers continue up to 300kW and above
+
     if (kw <= 210.0) return 215.0;
     if (kw <= 220.0) return 235.0;
     if (kw <= 230.0) return 255.0;
@@ -114,7 +110,7 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
       if (_region == 'Peninsular Malaysia') {
         if (_bodyType == 'Saloon') {
           if (isCompany) {
-            // Peninsular Company Saloon (Official JPJ)
+
             if (cc <= 1000) tax = 40;
             else if (cc <= 1200) tax = 110;
             else if (cc <= 1400) tax = 140;
@@ -125,7 +121,7 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
             else if (cc <= 3000) tax = 1760 + (cc - 2500) * 5.00;
             else tax = 4260 + (cc - 3000) * 9.00;
           } else {
-            // Peninsular Private Saloon
+
             if (cc <= 1000) tax = 20;
             else if (cc <= 1200) tax = 55;
             else if (cc <= 1400) tax = 70;
@@ -137,9 +133,9 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
             else tax = 2130 + (cc - 3000) * 4.50;
           }
         } else {
-          // Peninsular Non-Saloon
+
           if (isCompany) {
-            // Peninsular Company Non-Saloon (SUV/MPV/Pickup)
+
             if (cc <= 1600) tax = 200;
             else if (cc <= 1800) tax = 250 + (cc - 1600) * 0.50;
             else if (cc <= 2000) tax = 350 + (cc - 1800) * 0.80;
@@ -147,7 +143,6 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
             else if (cc <= 3000) tax = 1010 + (cc - 2500) * 2.00;
             else tax = 2010 + (cc - 3000) * 2.00;
           } else {
-            // Peninsular Private Non-Saloon
             if (cc <= 1000) tax = 20;
             else if (cc <= 1200) tax = 85;
             else if (cc <= 1400) tax = 100;
@@ -161,7 +156,6 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
         }
       }
 else if (_region == 'Sabah' || _region == 'Sarawak') {
-        // Sabah & Sarawak rates (much lower)
         if (cc <= 1000) tax = 20;
         else if (cc <= 1200) tax = 24;
         else if (cc <= 1400) tax = 28;
@@ -172,7 +166,6 @@ else if (_region == 'Sabah' || _region == 'Sarawak') {
         else if (cc <= 3000) tax = 370 + (cc - 2500) * 0.50;
         else tax = 620 + (cc - 3000) * 1.00;
       } else {
-        // Special Regions (Labuan, Langkawi, Pangkor) - Flat RM20 for most private
         tax = 20;
       }
     }

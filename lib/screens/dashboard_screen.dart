@@ -81,7 +81,7 @@ class DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 32),
                   _buildFuelPriceCard(),
                   
-                  const SizedBox(height: 100), // Spacing for bottom nav
+                  const SizedBox(height: 100),
                 ],
               ),
             ),
@@ -187,7 +187,6 @@ class DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _handleSnapIdentify(BuildContext context) async {
     final picker = ImagePicker();
-    // Allow user to choose between camera and gallery so it works on emulator easily
     final source = await showDialog<ImageSource>(
       context: context,
       builder: (context) => AlertDialog(
@@ -218,12 +217,10 @@ class DashboardScreenState extends State<DashboardScreen> {
     if (image == null) return;
     
     final bytes = await image.readAsBytes();
-    // Infer mime type
     String mimeType = 'image/jpeg';
     if (image.name.toLowerCase().endsWith('.png')) mimeType = 'image/png';
     else if (image.name.toLowerCase().endsWith('.webp')) mimeType = 'image/webp';
     
-    // Show loading dialog
     if (!context.mounted) return;
     showDialog(
       context: context,
@@ -263,9 +260,8 @@ class DashboardScreenState extends State<DashboardScreen> {
       }
     }
     
-    // Pop loading dialog
     if (!context.mounted) return;
-    Navigator.pop(context); // Close loading dialog
+    Navigator.pop(context);
     
     if (isNoInternet) {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -33,7 +33,6 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
       final user = _authService.currentUser;
       if (user == null) return;
 
-      // Fetch favourite car IDs
       final favResponse = await _supabase
           .from('favourite_indicators')
           .select('car_id')
@@ -52,7 +51,6 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
         return;
       }
 
-      // Fetch all cars and filter
       final allCars = await _dataService.fetchCars();
       final favouriteCars = allCars.where((car) => favCarIds.contains(car.id)).toList();
 

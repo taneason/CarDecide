@@ -20,7 +20,7 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
   final _apiService = ApiService();
   final MapController _mapController = MapController();
   
-  LatLng _currentPos = const LatLng(3.1390, 101.6869); // Default KL
+  LatLng _currentPos = const LatLng(3.1390, 101.6869);
   LatLng? _origin;
   LatLng? _destination;
   
@@ -36,7 +36,6 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
   int _drivingTime = 0;
   int _transitTime = 0;
   
-  // New Calculation Logic State
   bool _includeFeeder = false;
   bool _transitAvailable = true;
   double _transitMinCost = 0;
@@ -47,19 +46,14 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
   List<Map<String, dynamic>> _cars = [];
   Map<String, dynamic>? _selectedCar;
 
-  // Expansion Logic
   bool _isMapExpanded = false;
 
-  // Map Type Logic
   bool _isSatelliteView = false;
 
-  // Selection Context (like Google Maps)
   bool _isSelectingOrigin = false;
 
-  // Map Tools Menu
   bool _isMenuOpen = false;
 
-  // Search Logic
   final TextEditingController _originSearchController = TextEditingController();
   final TextEditingController _destinationSearchController = TextEditingController();
   List<Map<String, dynamic>> _originSuggestions = [];
@@ -86,7 +80,6 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
     try {
       setState(() => _isLoading = true);
       
-      // 1. Get Location
       try {
         Position? position = await _determinePosition();
         if (position != null) {
@@ -98,7 +91,6 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
         debugPrint('TransitScreen: Could not get GPS location, using default KL.');
       }
 
-      // 2. Fetch Prices & Cars
       final results = await Future.wait([
         _dataService.fetchLatestFuelPrices(),
         _dataService.fetchCarsAsMap(),
@@ -111,9 +103,9 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
         setState(() {
           if (fuelData.isNotEmpty) {
             _liveFuelPrices = fuelData;
-            _liveFuelPrices.remove('_date'); // Don't show date in dropdown
+            _liveFuelPrices.remove('_date');
           }
-          // Set default to RON95 (Floating) if available
+
           if (_liveFuelPrices.containsKey('RON95 (Floating)')) {
              _selectedFuelType = 'RON95 (Floating)';
           }
@@ -252,7 +244,7 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
         if (_isSelectingOrigin) {
           _origin = point;
           _originSearchController.text = displayAddress;
-          _isSelectingOrigin = false; // Switch back to destination mode after setting origin
+          _isSelectingOrigin = false;
         } else {
           _destination = point;
           _destinationSearchController.text = displayAddress;
@@ -282,14 +274,12 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
           _distKM = (distanceInMeters / 1000) * 1.25; 
         }
         
-        // 1. Driving Calculation (Unchanged)
+
         _tollCost = _distKM > 10 ? (_distKM - 10) * 0.15 : 0;
         _drivingCost = ((_distKM / 100) * _consumption * _fuelPrice) + _tollCost;
         _drivingTime = (_distKM * 1.5).toInt() + 5; 
 
-        // 2. Transit Calculation (New Rules)
-        
-        // Rule 1: Feasibility Check (Example: Distance > 400km or extreme coordinates)
+
         if (_distKM > 400) {
           _transitAvailable = false;
           _transitCost = 0;
@@ -299,22 +289,20 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
           _transitAvailable = true;
           
           if (_distKM <= 50) {
-            // Rule 2: City / Short Distance
+
             _transitCost = 1.20 + (_distKM * 0.15);
             _transitMinCost = _transitCost;
             _transitMaxCost = _transitCost;
             _transitLabel = "LRT / MRT / City Bus";
             _transitTime = (_distKM * 3).toInt() + 15;
           } else {
-            // Rule 3: Cross-State / Long Distance
-            _transitMinCost = _distKM * 0.10; // Express Bus
-            _transitMaxCost = _distKM * 0.20; // KTM ETS
-            _transitCost = _transitMinCost; // Default for display
+            _transitMinCost = _distKM * 0.10;
+            _transitMaxCost = _distKM * 0.20;
+            _transitCost = _transitMinCost;
             _transitLabel = "Express Bus / KTM ETS";
-            _transitTime = (_distKM * 1.5).toInt() + 45; // Faster multiplier for long distance highway travel
+            _transitTime = (_distKM * 1.5).toInt() + 45;
           }
 
-          // Rule 4: First/Last Mile Add-on
           if (_includeFeeder) {
             _transitCost += 20.0;
             _transitMinCost += 20.0;
@@ -428,13 +416,11 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
         children: [
           if (showTools) ...[
             if (_isMapExpanded)
-              // Vertical stack for expanded map
               ...toolButtons.map((btn) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: btn,
               ))
             else
-              // Horizontal row for collapsed map
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(
