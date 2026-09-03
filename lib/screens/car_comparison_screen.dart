@@ -126,7 +126,6 @@ class CarComparisonScreenState extends State<CarComparisonScreen> {
       if (kw <= 190.0) return 180.0;
       return 200.0;
     }
-    // Standard ICE Engine Road Tax (Peninsular Malaysia)
     if (cc <= 1000) return 20.0;
     if (cc <= 1200) return 55.0;
     if (cc <= 1400) return 70.0;

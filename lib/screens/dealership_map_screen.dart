@@ -32,7 +32,6 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
   List<Map<String, dynamic>> _searchSuggestions = [];
   String? _searchedPlaceName;
 
-  // In-memory RAM Cache to prevent redundant network reloads across visits
   static List<Map<String, dynamic>>? _cachedDealerships;
   static LatLng? _cachedSearchCenter;
   static DateTime? _cacheTimestamp;
@@ -40,7 +39,6 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
   @override
   void initState() {
     super.initState();
-    // ⚡ Instantly populate from RAM cache if previously loaded
     if (_cachedDealerships != null && _cachedDealerships!.isNotEmpty) {
       _dealerships = _cachedDealerships!;
       if (_cachedSearchCenter != null) {
@@ -138,7 +136,6 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
   }
 
   Future<void> _loadDealerships({bool forceRefresh = false}) async {
-    // 1. Check RAM Cache if not forcing a manual refresh
     if (!forceRefresh && _cachedDealerships != null && _cachedSearchCenter != null) {
       final double distanceMeters = Geolocator.distanceBetween(
         _searchCenter.latitude,
@@ -147,7 +144,6 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
         _cachedSearchCenter!.longitude,
       );
 
-      // Reuse RAM cache if within 1km (1000m) and fetched within the last 30 minutes
       final bool isCacheFresh = _cacheTimestamp != null &&
           DateTime.now().difference(_cacheTimestamp!).inMinutes < 30;
 
@@ -183,7 +179,6 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
         _isLoadingDealers = false;
       });
 
-      // Update in-memory RAM cache
       _cachedDealerships = dealers;
       _cachedSearchCenter = _searchCenter;
       _cacheTimestamp = DateTime.now();

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'main_screen.dart';
 import 'register_screen.dart';
-import 'otp_verification_screen.dart'; // Add this import
+import 'otp_verification_screen.dart';
 import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -378,7 +378,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                        color: Colors.transparent, // Expand hit area
+                        color: Colors.transparent,
                         child: const Text('Sign Up', style: TextStyle(color: Color(0xFF00796B), fontWeight: FontWeight.bold)),
                       ),
                     ),

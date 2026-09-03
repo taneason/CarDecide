@@ -495,7 +495,7 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
         initialZoom: 14.0,
         onTap: _onMapTap,
         interactionOptions: const InteractionOptions(
-          flags: InteractiveFlag.all & ~InteractiveFlag.rotate, // Rotation handled by compass
+          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
         ),
       ),
       children: [
@@ -869,7 +869,7 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
     String message;
 
     if (_distKM > 50) {
-      // For long distance, compare driving against transit range
+
       if (_drivingCost < _transitMinCost) {
         drivingBetter = true;
         diff = _transitMinCost - _drivingCost;
@@ -883,7 +883,6 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
         message = 'Public transit costs are comparable to driving for this trip.';
       }
     } else {
-      // For short distance, compare directly
       drivingBetter = _drivingCost < _transitCost;
       diff = (_drivingCost - _transitCost).abs();
       message = drivingBetter 
@@ -920,13 +919,13 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
 
   Widget _buildInstructionOverlay() {
     if (_origin != null && _destination != null) return const SizedBox.shrink();
-    // Hide instruction if suggestions are showing to avoid cluttered UI
+
     if (_originSuggestions.isNotEmpty || _destinationSuggestions.isNotEmpty) return const SizedBox.shrink();
     
     String message = _isSelectingOrigin ? '📍 Tap to set Start Point' : '🏁 Tap to set Destination';
     
     return Positioned(
-      top: 150, // Pushed further down as requested
+      top: 150,
       left: 20,
       right: 20,
       child: Center(

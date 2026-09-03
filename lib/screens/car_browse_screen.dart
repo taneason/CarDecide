@@ -55,10 +55,8 @@ class _CarBrowseScreenState extends State<CarBrowseScreen> {
     if (!mounted) return;
     setState(() => _isLoading = true);
     
-    // Fetch cars
     final cars = await _dataService.fetchCars(forceRefresh: forceRefresh);
     
-    // Fetch favourites
     Set<String> favs = {};
     try {
       final user = _authService.currentUser;
@@ -149,7 +147,6 @@ class _CarBrowseScreenState extends State<CarBrowseScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Successfully found ${newCar.fullName}!'), backgroundColor: AppColors.accentGreen),
         );
-        // Reload data from DB so the new car shows up
         await _loadData(forceRefresh: true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -222,7 +219,6 @@ class _CarBrowseScreenState extends State<CarBrowseScreen> {
 
     final isFav = _favouriteIds.contains(car.id);
     
-    // Optimistic UI update
     setState(() {
       if (isFav) {
         _favouriteIds.remove(car.id);
@@ -244,7 +240,6 @@ class _CarBrowseScreenState extends State<CarBrowseScreen> {
       }
     } catch (e) {
       debugPrint('Error toggling favourite: $e');
-      // Revert on error
       if (mounted) {
         setState(() {
           if (isFav) {
@@ -279,7 +274,6 @@ class _CarBrowseScreenState extends State<CarBrowseScreen> {
       return nameMatch && priceMatch;
     }).toList();
 
-    // Sort so favourites are at the top
     results.sort((a, b) {
       final aFav = _favouriteIds.contains(a.id) ? 1 : 0;
       final bFav = _favouriteIds.contains(b.id) ? 1 : 0;
