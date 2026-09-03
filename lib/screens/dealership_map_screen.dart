@@ -73,7 +73,6 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
         return;
       }
 
-      // 1. Immediately use last known location if available for instant centering
       final lastKnown = await Geolocator.getLastKnownPosition();
       if (lastKnown != null && mounted) {
         setState(() {
@@ -84,7 +83,6 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
         _loadDealerships();
       }
 
-      // 2. Fetch fresh live GPS coordinates
       Position? position;
       try {
         position = await Geolocator.getCurrentPosition(
@@ -105,12 +103,13 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
       }
 
       if (mounted && position != null) {
+        final userLatLng = LatLng(position.latitude, position.longitude);
         setState(() {
-          _userLocation = LatLng(position.latitude, position.longitude);
-          _searchCenter = _userLocation!;
+          _userLocation = userLatLng;
+          _searchCenter = userLatLng;
           _isLoadingLocation = false;
         });
-        _mapController.move(_searchCenter, 14.0);
+        _mapController.move(userLatLng, 14.0);
         _loadDealerships();
       } else {
         if (mounted) setState(() => _isLoadingLocation = false);
