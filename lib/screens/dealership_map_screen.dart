@@ -47,36 +47,82 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
 
 
   Future<void> _determinePosition() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) { _loadDealerships(); return; }
-
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) { _loadDealerships(); return; }
-    }
-    if (permission == LocationPermission.deniedForever) { _loadDealerships(); return; }
+    setState(() => _isLoadingLocation = true);
 
     try {
-      final position = await Geolocator.getCurrentPosition();
-      if (mounted) {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint('Location services are disabled.');
+        if (mounted) setState(() => _isLoadingLocation = false);
+        _loadDealerships();
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (mounted) setState(() => _isLoadingLocation = false);
+          _loadDealerships();
+          return;
+        }
+      }
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) setState(() => _isLoadingLocation = false);
+        _loadDealerships();
+        return;
+      }
+
+      // 1. Immediately use last known location if available for instant centering
+      final lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null && mounted) {
+        setState(() {
+          _userLocation = LatLng(lastKnown.latitude, lastKnown.longitude);
+          _searchCenter = _userLocation!;
+        });
+        _mapController.move(_searchCenter, 14.0);
+        _loadDealerships();
+      }
+
+      // 2. Fetch fresh live GPS coordinates
+      Position? position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            timeLimit: Duration(seconds: 4),
+          ),
+        );
+      } catch (_) {
+        try {
+          position = await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.medium,
+              timeLimit: Duration(seconds: 4),
+            ),
+          );
+        } catch (_) {}
+      }
+
+      if (mounted && position != null) {
         setState(() {
           _userLocation = LatLng(position.latitude, position.longitude);
           _searchCenter = _userLocation!;
           _isLoadingLocation = false;
         });
-        _mapController.move(_searchCenter, 13.0);
+        _mapController.move(_searchCenter, 14.0);
         _loadDealerships();
+      } else {
+        if (mounted) setState(() => _isLoadingLocation = false);
       }
     } catch (e) {
+      debugPrint('Error determining position: $e');
       if (mounted) {
         setState(() => _isLoadingLocation = false);
         _loadDealerships();
       }
     }
   }
-
-
 
   Future<void> _loadDealerships() async {
     setState(() {
@@ -87,7 +133,7 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
     final dealers = await _apiService.fetchNearbyDealerships(
       _searchCenter.latitude,
       _searchCenter.longitude,
-      radius: 5000,
+      radius: 8000,
     );
 
     if (mounted) {
@@ -663,7 +709,9 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
             icon: Icons.my_location,
             onPressed: () {
               if (_userLocation != null) {
-                _mapController.move(_userLocation!, 13.0);
+                _mapController.move(_userLocation!, 14.5);
+              } else {
+                _determinePosition();
               }
             },
             color: Colors.blue,
