@@ -32,9 +32,23 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
   List<Map<String, dynamic>> _searchSuggestions = [];
   String? _searchedPlaceName;
 
+  // In-memory RAM Cache to prevent redundant network reloads across visits
+  static List<Map<String, dynamic>>? _cachedDealerships;
+  static LatLng? _cachedSearchCenter;
+  static DateTime? _cacheTimestamp;
+
   @override
   void initState() {
     super.initState();
+    // ⚡ Instantly populate from RAM cache if previously loaded
+    if (_cachedDealerships != null && _cachedDealerships!.isNotEmpty) {
+      _dealerships = _cachedDealerships!;
+      if (_cachedSearchCenter != null) {
+        _searchCenter = _cachedSearchCenter!;
+      }
+      _isLoadingLocation = false;
+      _isLoadingDealers = false;
+    }
     _determinePosition();
   }
 
@@ -123,11 +137,39 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
     }
   }
 
-  Future<void> _loadDealerships() async {
-    setState(() {
-      _isLoadingLocation = false;
-      _isLoadingDealers = true;
-    });
+  Future<void> _loadDealerships({bool forceRefresh = false}) async {
+    // 1. Check RAM Cache if not forcing a manual refresh
+    if (!forceRefresh && _cachedDealerships != null && _cachedSearchCenter != null) {
+      final double distanceMeters = Geolocator.distanceBetween(
+        _searchCenter.latitude,
+        _searchCenter.longitude,
+        _cachedSearchCenter!.latitude,
+        _cachedSearchCenter!.longitude,
+      );
+
+      // Reuse RAM cache if within 1km (1000m) and fetched within the last 30 minutes
+      final bool isCacheFresh = _cacheTimestamp != null &&
+          DateTime.now().difference(_cacheTimestamp!).inMinutes < 30;
+
+      if (distanceMeters < 1000 && isCacheFresh) {
+        debugPrint('⚡ Reusing RAM Cache (${_cachedDealerships!.length} dealers, 0ms latency)');
+        if (mounted) {
+          setState(() {
+            _dealerships = _cachedDealerships!;
+            _isLoadingLocation = false;
+            _isLoadingDealers = false;
+          });
+        }
+        return;
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoadingLocation = false;
+        _isLoadingDealers = true;
+      });
+    }
 
     final dealers = await _apiService.fetchNearbyDealerships(
       _searchCenter.latitude,
@@ -140,6 +182,11 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
         _dealerships = dealers;
         _isLoadingDealers = false;
       });
+
+      // Update in-memory RAM cache
+      _cachedDealerships = dealers;
+      _cachedSearchCenter = _searchCenter;
+      _cacheTimestamp = DateTime.now();
     }
   }
 
@@ -188,7 +235,7 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
     });
 
     _mapController.move(_searchCenter, 13.0);
-    _loadDealerships();
+    _loadDealerships(forceRefresh: true);
     FocusScope.of(context).unfocus();
   }
 
@@ -719,7 +766,7 @@ class _DealershipMapScreenState extends State<DealershipMapScreen> {
           _buildMapTool(
             heroTag: 'refresh_dealers',
             icon: Icons.refresh,
-            onPressed: _loadDealerships,
+            onPressed: () => _loadDealerships(forceRefresh: true),
             color: Colors.green,
           ),
         ],
