@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
+import '../services/snap_identify_helper.dart';
 import 'dashboard_screen.dart';
 import 'car_comparison_screen.dart';
 import 'ai_chat_screen.dart';
@@ -64,6 +65,35 @@ class MainScreenState extends State<MainScreen> {
     });
   }
 
+  Widget _buildNavItem(int index, IconData unselectedIcon, IconData selectedIcon, String label) {
+    final isSelected = _currentIndex == index;
+    final color = isSelected ? AppColors.primary : Colors.grey.shade400;
+
+    return Expanded(
+      child: InkWell(
+        onTap: () => setTabIndex(index),
+        splashColor: AppColors.primary.withValues(alpha: 0.1),
+        highlightColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(isSelected ? selectedIcon : unselectedIcon, color: color, size: 24),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,30 +101,58 @@ class MainScreenState extends State<MainScreen> {
         index: _currentIndex,
         children: _pages,
       ),
-      bottomNavigationBar: Container(
+      floatingActionButton: Container(
+        height: 60,
+        width: 60,
         decoration: BoxDecoration(
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2))],
-        ),
-        child: BottomNavigationBar(
-          backgroundColor: Colors.white,
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: Colors.grey.shade400,
-          type: BottomNavigationBarType.fixed,
-          currentIndex: _currentIndex,
-          selectedFontSize: 12,
-          unselectedFontSize: 12,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-            _triggerRefreshForTab(index);
-          },
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), activeIcon: Icon(Icons.bar_chart), label: 'Compare'),
-            BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), activeIcon: Icon(Icons.chat_bubble), label: 'Advisor'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
+          shape: BoxShape.circle,
+          gradient: const LinearGradient(
+            colors: [Color(0xFF00897B), AppColors.primary],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
           ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () => SnapIdentifyHelper.handleSnapIdentify(context),
+            child: const Center(
+              child: Icon(
+                Icons.camera_alt_rounded,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+          ),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8.0,
+        elevation: 12,
+        shadowColor: Colors.black.withValues(alpha: 0.15),
+        color: Colors.white,
+        clipBehavior: Clip.antiAlias,
+        child: SizedBox(
+          height: 60,
+          child: Row(
+            children: [
+              _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
+              _buildNavItem(1, Icons.bar_chart_outlined, Icons.bar_chart, 'Compare'),
+              const SizedBox(width: 68),
+              _buildNavItem(2, Icons.chat_bubble_outline, Icons.chat_bubble, 'Advisor'),
+              _buildNavItem(3, Icons.person_outline, Icons.person, 'Profile'),
+            ],
+          ),
         ),
       ),
     );
