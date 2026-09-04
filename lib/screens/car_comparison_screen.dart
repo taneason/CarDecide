@@ -6,6 +6,7 @@ import '../services/data_service.dart';
 import '../services/ai_service.dart';
 import 'decision_summary_screen.dart';
 import 'car_browse_screen.dart';
+import 'car_detail_screen.dart';
 
 class CarComparisonScreen extends StatefulWidget {
   final List<Map<String, dynamic>> selectedCars;
@@ -191,56 +192,79 @@ class CarComparisonScreenState extends State<CarComparisonScreen> {
 
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
+        Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          child: InkWell(
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10)],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  height: 100,
-                  width: double.infinity,
-                  color: AppColors.background,
-                  child: (carImg != null && carImg.isNotEmpty)
-                      ? CachedNetworkImage(
-                          imageUrl: carImg,
-                          fit: BoxFit.cover,
-                          fadeInDuration: const Duration(milliseconds: 200),
-                          placeholder: (context, url) => Container(color: Colors.grey.shade100),
-                          errorWidget: (c, url, error) => const Icon(Icons.directions_car, size: 40, color: Colors.grey),
-                        )
-                      : const Icon(Icons.directions_car, size: 40, color: Colors.grey),
-                ),
+            onTap: () {
+              if (car != null && car.isNotEmpty) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CarDetailScreen(car: car),
+                  ),
+                );
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10)],
               ),
-              const SizedBox(height: 12),
-              Text('${car?['make'] ?? ""} ${car?['model'] ?? ""}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
-              const SizedBox(height: 4),
-              Text(_formatCurrency((car?['price'] as num?)?.toDouble() ?? 0.0), style: const TextStyle(color: AppColors.primary, fontSize: 14, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              if (isBestValue)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(12)),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.check_circle, color: AppColors.accentGreen, size: 12),
-                      SizedBox(width: 4),
-                      Text('Best Value', style: TextStyle(color: AppColors.accentGreen, fontSize: 10, fontWeight: FontWeight.bold)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold)),
+                      if (car != null && car.isNotEmpty)
+                        const Icon(Icons.arrow_forward_ios, size: 10, color: Colors.grey),
                     ],
                   ),
-                )
-              else 
-                const SizedBox(height: 22), 
-            ],
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      height: 100,
+                      width: double.infinity,
+                      color: AppColors.background,
+                      child: (carImg != null && carImg.isNotEmpty)
+                          ? CachedNetworkImage(
+                              imageUrl: carImg,
+                              fit: BoxFit.cover,
+                              fadeInDuration: const Duration(milliseconds: 200),
+                              placeholder: (context, url) => Container(color: Colors.grey.shade100),
+                              errorWidget: (c, url, error) => const Icon(Icons.directions_car, size: 40, color: Colors.grey),
+                            )
+                          : const Icon(Icons.directions_car, size: 40, color: Colors.grey),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text('${car?['make'] ?? ""} ${car?['model'] ?? ""}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 4),
+                  Text(_formatCurrency((car?['price'] as num?)?.toDouble() ?? 0.0), style: const TextStyle(color: AppColors.primary, fontSize: 14, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  if (isBestValue)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(12)),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.check_circle, color: AppColors.accentGreen, size: 12),
+                          SizedBox(width: 4),
+                          Text('Best Value', style: TextStyle(color: AppColors.accentGreen, fontSize: 10, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    )
+                  else 
+                    const SizedBox(height: 22), 
+                ],
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 12),
