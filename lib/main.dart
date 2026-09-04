@@ -30,7 +30,7 @@ void main() async {
     );
     debugPrint("Supabase: Initialization successful.");
 
-    // Load API keys (from .env or Supabase app_config table)
+
     await ConfigService.initialize();
   } catch (e) {
     debugPrint("Startup Initialization Error: $e");

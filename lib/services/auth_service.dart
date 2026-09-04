@@ -4,10 +4,10 @@ import 'package:google_sign_in/google_sign_in.dart';
 class AuthService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  // Get current user
+
   User? get currentUser => _supabase.auth.currentUser;
 
-  // Email & Password Sign Up
+
   Future<AuthResponse> signUp(String email, String password) async {
     return await _supabase.auth.signUp(email: email, password: password);
   }

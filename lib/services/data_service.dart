@@ -34,11 +34,11 @@ class DataService {
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         
-        // Filter for 'level' series type to get actual prices, not weekly changes
+
         final levelData = data.where((item) => item['series_type'] == 'level').toList();
         
         if (levelData.isNotEmpty) {
-          // The API returns chronological order, so the last is the latest
+
           final latest = levelData.last;
           final result = {
             'RON95 (Floating)': _parseDouble(latest['ron95']),
@@ -52,7 +52,6 @@ class DataService {
             '_date': latest['date'] ?? '', 
           };
 
-          // Save to cache
           await prefs.setString('fuel_prices_data', json.encode(result));
           await prefs.setInt('fuel_prices_timestamp', DateTime.now().millisecondsSinceEpoch);
 
