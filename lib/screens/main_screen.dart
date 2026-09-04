@@ -102,8 +102,8 @@ class MainScreenState extends State<MainScreen> {
         children: _pages,
       ),
       floatingActionButton: Container(
-        height: 60,
-        width: 60,
+        height: 56,
+        width: 56,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: const LinearGradient(
@@ -113,9 +113,9 @@ class MainScreenState extends State<MainScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: AppColors.primary.withValues(alpha: 0.35),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -128,27 +128,27 @@ class MainScreenState extends State<MainScreen> {
               child: Icon(
                 Icons.camera_alt_rounded,
                 color: Colors.white,
-                size: 28,
+                size: 26,
               ),
             ),
           ),
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: const _LoweredDockedFabLocation(offsetY: 10.0),
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
-        notchMargin: 8.0,
+        notchMargin: 6.0,
         elevation: 12,
         shadowColor: Colors.black.withValues(alpha: 0.15),
         color: Colors.white,
         clipBehavior: Clip.antiAlias,
         child: SizedBox(
-          height: 60,
+          height: 62,
           child: Row(
             children: [
               _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
               _buildNavItem(1, Icons.bar_chart_outlined, Icons.bar_chart, 'Compare'),
-              const SizedBox(width: 68),
+              const SizedBox(width: 64),
               _buildNavItem(2, Icons.chat_bubble_outline, Icons.chat_bubble, 'Advisor'),
               _buildNavItem(3, Icons.person_outline, Icons.person, 'Profile'),
             ],
@@ -156,5 +156,16 @@ class MainScreenState extends State<MainScreen> {
         ),
       ),
     );
+  }
+}
+
+class _LoweredDockedFabLocation extends FloatingActionButtonLocation {
+  final double offsetY;
+  const _LoweredDockedFabLocation({this.offsetY = 10.0});
+
+  @override
+  Offset getOffset(ScaffoldPrelayoutGeometry scaffoldGeometry) {
+    final Offset standardOffset = FloatingActionButtonLocation.centerDocked.getOffset(scaffoldGeometry);
+    return Offset(standardOffset.dx, standardOffset.dy + offsetY);
   }
 }
