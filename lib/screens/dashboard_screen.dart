@@ -411,48 +411,53 @@ class DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildDealershipCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 160,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade300,
-        borderRadius: BorderRadius.circular(24),
-        image: const DecorationImage(
-          image: NetworkImage('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&q=80&w=500'),
-          fit: BoxFit.cover,
-          opacity: 0.6,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const DealershipMapScreen()));
+      },
+      child: Container(
+        width: double.infinity,
+        height: 160,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade300,
+          borderRadius: BorderRadius.circular(24),
+          image: const DecorationImage(
+            image: NetworkImage('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&q=80&w=500'),
+            fit: BoxFit.cover,
+            opacity: 0.6,
+          ),
         ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            left: 20,
-            bottom: 20,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text('Nearby Dealerships', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, shadows: [Shadow(blurRadius: 4)])),
-                Text('Explore verified showrooms in MY', style: TextStyle(color: Colors.white, fontSize: 14, shadows: [Shadow(blurRadius: 4)])),
-              ],
-            ),
-          ),
-          Positioned(
-            right: 20,
-            bottom: 20,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const DealershipMapScreen()));
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Stack(
+          children: [
+            Positioned(
+              left: 20,
+              bottom: 20,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text('Nearby Dealerships', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, shadows: [Shadow(blurRadius: 4)])),
+                  Text('Explore verified showrooms in MY', style: TextStyle(color: Colors.white, fontSize: 14, shadows: [Shadow(blurRadius: 4)])),
+                ],
               ),
-              icon: const Icon(Icons.location_on, size: 16),
-              label: const Text('View Map', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
             ),
-          ),
-        ],
+            Positioned(
+              right: 20,
+              bottom: 20,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const DealershipMapScreen()));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                icon: const Icon(Icons.location_on, size: 16),
+                label: const Text('View Map', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
