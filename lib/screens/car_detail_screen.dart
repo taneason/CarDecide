@@ -5,7 +5,6 @@ import 'ownership_calculators.dart';
 import 'ai_chat_screen.dart';
 import 'main_screen.dart';
 
-import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
 
@@ -225,76 +224,8 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  const Text('Find on Marketplaces', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildMarketplaceButton(
-                          'Carsome',
-                          const Color(0xFFF59E0B),
-                          () => _launchMarketplace('https://www.carsome.my/buy-car?q=${Uri.encodeComponent("${car['make']} ${car['model']}")}'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildMarketplaceButton(
-                          'Carlist.my',
-                          const Color(0xFF2563EB),
-                          () => _launchMarketplace('https://www.carlist.my/cars-for-sale?q=${Uri.encodeComponent("${car['make']} ${car['model']}")}'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildMarketplaceButton(
-                          'Mudah.my',
-                          const Color(0xFFDC2626),
-                          () => _launchMarketplace('https://www.mudah.my/malaysia/cars-for-sale?q=${Uri.encodeComponent("${car['make']} ${car['model']}")}'),
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _launchMarketplace(String url) async {
-    final uri = Uri.parse(url);
-    try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open marketplace link')),
-        );
-      }
-    }
-  }
-
-  Widget _buildMarketplaceButton(String name, Color color, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Icon(Icons.open_in_new, size: 18, color: color),
-            const SizedBox(height: 6),
-            Text(
-              name,
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color),
             ),
           ],
         ),
