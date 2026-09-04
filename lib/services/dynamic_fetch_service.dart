@@ -2,19 +2,18 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'config_service.dart';
 import '../models/car_model.dart';
 import 'car_api_service.dart';
 
 class DynamicFetchService {
-  final String _apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
   late final GenerativeModel _model;
   final CarApiService _carApiService = CarApiService();
 
   DynamicFetchService() {
     _model = GenerativeModel(
       model: 'gemini-3.1-flash-lite',
-      apiKey: _apiKey,
+      apiKey: ConfigService.geminiApiKey,
     );
   }
 
@@ -157,7 +156,7 @@ class DynamicFetchService {
 
       final visionModel = GenerativeModel(
         model: 'gemini-3.1-flash-lite',
-        apiKey: _apiKey,
+        apiKey: ConfigService.geminiApiKey,
       );
 
       final response = await visionModel.generateContent([

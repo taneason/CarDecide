@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'config_service.dart';
 
 class ApiService {
-  static String get _orsApiKey => dotenv.env['ORS_API_KEY'] ?? '';
+  static String get _orsApiKey => ConfigService.orsApiKey;
 
   Future<List<Map<String, dynamic>>> searchLocations(String query) async {
     try {

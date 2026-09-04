@@ -1,15 +1,14 @@
 import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'config_service.dart';
 
 class AiService {
-  final String _apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
   late final GenerativeModel _model;
   ChatSession? _chat;
 
   AiService() {
     _model = GenerativeModel(
       model: 'gemini-3.1-flash-lite',
-      apiKey: _apiKey,
+      apiKey: ConfigService.geminiApiKey,
       systemInstruction: Content.system(
           'You are the CarDecide AI Assistant, an expert in the Malaysian automotive market and public transportation. '
           'Your role is to help users decide whether to buy a car, and which one, using data-backed insights. '
