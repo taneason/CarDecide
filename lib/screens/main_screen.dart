@@ -134,16 +134,16 @@ class MainScreenState extends State<MainScreen> {
           ),
         ),
       ),
-      floatingActionButtonLocation: const _LoweredDockedFabLocation(offsetY: 10.0),
+      floatingActionButtonLocation: const _LoweredDockedFabLocation(offsetY: 16.0),
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
-        notchMargin: 6.0,
+        notchMargin: 5.0,
         elevation: 12,
         shadowColor: Colors.black.withValues(alpha: 0.15),
         color: Colors.white,
         clipBehavior: Clip.antiAlias,
         child: SizedBox(
-          height: 62,
+          height: 64,
           child: Row(
             children: [
               _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
@@ -161,7 +161,7 @@ class MainScreenState extends State<MainScreen> {
 
 class _LoweredDockedFabLocation extends FloatingActionButtonLocation {
   final double offsetY;
-  const _LoweredDockedFabLocation({this.offsetY = 10.0});
+  const _LoweredDockedFabLocation({this.offsetY = 16.0});
 
   @override
   Offset getOffset(ScaffoldPrelayoutGeometry scaffoldGeometry) {
