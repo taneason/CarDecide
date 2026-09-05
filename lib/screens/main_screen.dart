@@ -94,6 +94,44 @@ class MainScreenState extends State<MainScreen> {
     );
   }
 
+  Widget _buildCameraButton() {
+    return Expanded(
+      child: InkWell(
+        onTap: () => SnapIdentifyHelper.handleSnapIdentify(context),
+        splashColor: AppColors.primary.withValues(alpha: 0.1),
+        highlightColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: const BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.camera_alt_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
+            ),
+            const SizedBox(height: 3),
+            const Text(
+              'Camera',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -101,68 +139,17 @@ class MainScreenState extends State<MainScreen> {
         index: _currentIndex,
         children: _pages,
       ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            height: 56,
-            width: 56,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [AppColors.secondary, AppColors.primary],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.secondary.withValues(alpha: 0.35),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: () => SnapIdentifyHelper.handleSnapIdentify(context),
-                child: const Center(
-                  child: Icon(
-                    Icons.camera_alt_rounded,
-                    color: Colors.white,
-                    size: 26,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Camera',
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-      floatingActionButtonLocation: const _LoweredDockedFabLocation(offsetY: 16.0),
       bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 5.0,
         elevation: 12,
         shadowColor: Colors.black.withValues(alpha: 0.15),
         color: Colors.white,
-        clipBehavior: Clip.antiAlias,
         child: SizedBox(
           height: 64,
           child: Row(
             children: [
               _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
               _buildNavItem(1, Icons.bar_chart_outlined, Icons.bar_chart, 'Compare'),
-              const SizedBox(width: 64),
+              _buildCameraButton(),
               _buildNavItem(2, Icons.chat_bubble_outline, Icons.chat_bubble, 'Advisor'),
               _buildNavItem(3, Icons.person_outline, Icons.person, 'Profile'),
             ],
@@ -170,16 +157,5 @@ class MainScreenState extends State<MainScreen> {
         ),
       ),
     );
-  }
-}
-
-class _LoweredDockedFabLocation extends FloatingActionButtonLocation {
-  final double offsetY;
-  const _LoweredDockedFabLocation({this.offsetY = 16.0});
-
-  @override
-  Offset getOffset(ScaffoldPrelayoutGeometry scaffoldGeometry) {
-    final Offset standardOffset = FloatingActionButtonLocation.centerDocked.getOffset(scaffoldGeometry);
-    return Offset(standardOffset.dx, standardOffset.dy + offsetY);
   }
 }
