@@ -344,101 +344,164 @@ class DashboardScreenState extends State<DashboardScreen> {
       future: _dataService.fetchLatestFuelPrices(),
       builder: (context, snapshot) {
         final data = snapshot.data;
-        
         final String dateStr = data?['_date'] ?? '';
-        final String dateDisplay = dateStr.isNotEmpty ? ' (Updated: $dateStr)' : '';
+
+        final fuels = [
+          {'label': 'RON95',          'key': 'RON95 (Floating)',    'color': Colors.amber.shade600},
+          {'label': 'RON95 BUDI',     'key': 'RON95 (BUDI 95)',    'color': Colors.amber.shade400},
+          {'label': 'RON95 SKPS',     'key': 'RON95 (SKPS)',       'color': Colors.orange.shade600},
+          {'label': 'RON97',          'key': 'RON97',              'color': Colors.green.shade600},
+          {'label': 'Diesel (Pen.)',  'key': 'Diesel (Peninsular)','color': Colors.grey.shade700},
+          {'label': 'Diesel (E.M.)', 'key': 'Diesel (Sbh/Swk)',   'color': Colors.blueGrey.shade400},
+          {'label': 'Diesel BUDI',    'key': 'Diesel (BUDI)',      'color': Colors.blueGrey.shade800},
+          {'label': 'Diesel SKDS',    'key': 'Diesel (SKDS)',      'color': const Color(0xFF37474F)},
+        ];
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Live Fuel Prices$dateDisplay',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.secondary,
-              ),
+            // Header: title + info icon + updated date
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'Live Fuel Prices',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.secondary,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.primary),
+                  ],
+                ),
+                if (dateStr.isNotEmpty)
+                  Text(
+                    'Updated $dateStr',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                _buildFuelItem('RON95', data?['RON95 (Floating)'], Colors.amber.shade600),
-                const SizedBox(width: 6),
-                _buildFuelItem('R95 BUDI', data?['RON95 (BUDI 95)'], Colors.amber.shade500),
-                const SizedBox(width: 6),
-                _buildFuelItem('R95 SKPS', data?['RON95 (SKPS)'], Colors.orange),
-                const SizedBox(width: 6),
-                _buildFuelItem('RON97', data?['RON97'], Colors.green.shade600),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                _buildFuelItem('Dsl (Pen)', data?['Diesel (Peninsular)'], Colors.grey.shade800),
-                const SizedBox(width: 6),
-                _buildFuelItem('Dsl (E.M)', data?['Diesel (Sbh/Swk)'], Colors.grey.shade600),
-                const SizedBox(width: 6),
-                _buildFuelItem('Dsl BUDI', data?['Diesel (BUDI)'], Colors.blueGrey.shade800),
-                const SizedBox(width: 6),
-                _buildFuelItem('Dsl SKDS', data?['Diesel (SKDS)'], Colors.black87),
-              ],
+            // Table card
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Column headers
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    child: Row(
+                      children: const [
+                        Expanded(
+                          flex: 5,
+                          child: Text(
+                            'Fuel Type',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: Text(
+                            'Price (RM)',
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  // Fuel rows
+                  ...fuels.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final f = entry.value;
+                    final rawPrice = data?[f['key']];
+                    final priceStr = rawPrice != null
+                        ? (rawPrice as num).toStringAsFixed(2)
+                        : null;
+                    final isLast = i == fuels.length - 1;
+                    return Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                          child: Row(
+                            children: [
+                              // Colored dot
+                              Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: f['color'] as Color,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              // Fuel name
+                              Expanded(
+                                flex: 5,
+                                child: Text(
+                                  f['label'] as String,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                              // Price
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  priceStr != null ? 'RM $priceStr' : '—',
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: priceStr != null
+                                        ? AppColors.secondary
+                                        : AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (!isLast)
+                          const Divider(height: 1, indent: 36, endIndent: 16),
+                      ],
+                    );
+                  }),
+                ],
+              ),
             ),
           ],
         );
       },
-    );
-  }
-
-  Widget _buildFuelItem(String type, dynamic price, Color color) {
-    final String priceStr = price != null ? 'RM ${(price as num).toStringAsFixed(2)}' : '---';
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 2),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                type,
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(height: 8),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                priceStr,
-                style: const TextStyle(
-                  color: AppColors.secondary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
