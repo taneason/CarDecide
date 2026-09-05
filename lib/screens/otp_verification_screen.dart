@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/app_constants.dart';
 import '../services/auth_service.dart';
 import 'main_screen.dart';
 import 'reset_password_screen.dart';
@@ -53,7 +54,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           message = 'Incorrect code. Please check your email.';
         }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message), backgroundColor: Colors.red),
+          SnackBar(content: Text(message), backgroundColor: AppColors.accentRed),
         );
       }
     } finally {
@@ -65,16 +66,16 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(backgroundColor: Colors.white, elevation: 0, leading: const BackButton(color: Colors.black)),
+      appBar: AppBar(backgroundColor: Colors.white, elevation: 0, leading: const BackButton(color: AppColors.secondary)),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Verify Email', style: TextStyle(color: Color(0xFF0A0E1A), fontSize: 32, fontWeight: FontWeight.bold)),
+              const Text('Verify Email', style: TextStyle(color: AppColors.secondary, fontSize: 32, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              Text('Enter the 6-digit code sent to\n${widget.email}', style: const TextStyle(color: Colors.grey, fontSize: 16)),
+              Text('Enter the 6-digit code sent to\n${widget.email}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 16)),
               const SizedBox(height: 48),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -86,7 +87,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 height: 56,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0A0E1A),
+                    backgroundColor: AppColors.secondary,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   onPressed: _isLoading ? null : _verifyOtp,
@@ -99,7 +100,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               Center(
                 child: TextButton(
                   onPressed: () => _authService.sendOtp(widget.email, shouldCreateUser: !widget.isLogin),
-                  child: const Text('Resend Code', style: TextStyle(color: Color(0xFF0F9D58), fontWeight: FontWeight.bold)),
+                  child: const Text('Resend Code', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -125,7 +126,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           contentPadding: const EdgeInsets.symmetric(vertical: 10),
           counterText: '',
           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF0F9D58), width: 2)),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
         ),
         onChanged: (value) {
           if (value.isNotEmpty && index < 5) {

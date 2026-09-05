@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 
+import 'constants/app_constants.dart';
 import 'services/config_service.dart';
 
 const String _defaultSupabaseUrl = 'https://nvfirkvoanegxbnycesj.supabase.co';
@@ -51,7 +52,13 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Roboto',
-        primaryColor: const Color(0xFF00796B),
+        primaryColor: AppColors.primary,
+        scaffoldBackgroundColor: AppColors.background,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.primary,
+          primary: AppColors.primary,
+          secondary: AppColors.secondary,
+        ),
       ),
       home: session != null ? MainScreen() : const LoginScreen(),
     );

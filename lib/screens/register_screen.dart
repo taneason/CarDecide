@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/app_constants.dart';
 import '../services/auth_service.dart';
 import 'otp_verification_screen.dart';
 import 'main_screen.dart';
@@ -63,7 +64,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = true);
     try {
       final response = await _authService.signUp(email, password);
-      
 
       if (response.user != null && response.user!.identities != null && response.user!.identities!.isEmpty) {
         throw Exception('already registered');
@@ -72,12 +72,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (mounted) {
         if (response.session != null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Registration successful!'), backgroundColor: Colors.green),
+            const SnackBar(content: Text('Registration successful!'), backgroundColor: AppColors.accentGreen),
           );
           Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MainScreen()), (route) => false);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Verification code sent to your email!'), backgroundColor: Colors.green),
+            const SnackBar(content: Text('Verification code sent to your email!'), backgroundColor: AppColors.accentGreen),
           );
           Navigator.push(
             context,
@@ -109,16 +109,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(backgroundColor: Colors.white, elevation: 0, leading: const BackButton(color: Colors.black)),
+      appBar: AppBar(backgroundColor: Colors.white, elevation: 0, leading: const BackButton(color: AppColors.secondary)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Create Account', style: TextStyle(color: Color(0xFF0A0E1A), fontSize: 32, fontWeight: FontWeight.bold)),
+              const Text('Create Account', style: TextStyle(color: AppColors.secondary, fontSize: 32, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              const Text('Start your CarDecide journey', style: TextStyle(color: Colors.grey, fontSize: 14)),
+              const Text('Start your CarDecide journey', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
               const SizedBox(height: 40),
               
               _buildLabel('EMAIL ADDRESS'),
@@ -138,7 +138,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 height: 56,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0A0E1A),
+                    backgroundColor: AppColors.secondary,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   onPressed: _isLoading ? null : _handleRegister,
@@ -157,7 +157,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(text, style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
+      child: Text(text, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
     );
   }
 
@@ -175,7 +175,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ) : null,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF0F9D58), width: 2)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
       ),
     );
   }
