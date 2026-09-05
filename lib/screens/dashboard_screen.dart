@@ -135,7 +135,7 @@ class DashboardScreenState extends State<DashboardScreen> {
         _buildActionCard(
           context,
           'Browse Cars',
-          'Explore specs & MY trends',
+          'Explore specs & prices',
           Icons.directions_car_outlined,
           () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CarBrowseScreen())),
         ),

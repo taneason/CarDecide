@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
+import '../services/data_service.dart';
 
 class OwnershipCalculators extends StatefulWidget {
   final double? initialPrice;
+  final Map<String, dynamic>? car;
 
-  const OwnershipCalculators({super.key, this.initialPrice});
+  const OwnershipCalculators({super.key, this.initialPrice, this.car});
 
   @override
   State<OwnershipCalculators> createState() => _OwnershipCalculatorsState();
@@ -12,6 +14,7 @@ class OwnershipCalculators extends StatefulWidget {
 
 class _OwnershipCalculatorsState extends State<OwnershipCalculators> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final _dataService = DataService();
 
   final _loanFormKey = GlobalKey<FormState>();
   final _priceController = TextEditingController();
@@ -29,15 +32,106 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
   String _bodyType = 'Saloon';
   double _roadTax = 0;
 
+  final _fuelFormKey = GlobalKey<FormState>();
+  final _dailyDistanceController = TextEditingController();
+  final _daysController = TextEditingController();
+  final _consumptionController = TextEditingController();
+  final _tankCapacityController = TextEditingController();
+  String _selectedFuelType = 'RON95 (Floating)';
+  Map<String, double> _liveFuelPrices = {
+    'RON95 (Floating)': 2.05,
+    'RON97': 3.47,
+    'Diesel (Peninsular)': 3.35,
+    'RON95 (BUDI 95)': 1.99,
+  };
+  double _monthlyFuelCost = 0;
+  double _annualFuelCost = 0;
+  double _costPerKm = 0;
+  double _fullTankCost = 0;
+  double _fullTankRange = 0;
+  double _monthlyKm = 0;
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    if (widget.initialPrice != null) {
-      _priceController.text = widget.initialPrice!.toStringAsFixed(0);
+    _tabController = TabController(length: 3, vsync: this);
+
+    final car = widget.car;
+    double? price = widget.initialPrice;
+
+    if (car != null) {
+      if (car['price'] != null) {
+        price = (car['price'] as num).toDouble();
+      }
+      if (car['fuelConsumption'] != null) {
+        _consumptionController.text = (car['fuelConsumption'] as num).toStringAsFixed(1);
+      }
+      if (car['isEV'] == true) {
+        _fuelType = 'EV';
+        if (car['motorPower'] != null) {
+          _powerController.text = car['motorPower'].toString();
+        } else if (car['power'] != null) {
+          _powerController.text = car['power'].toString();
+        }
+      } else {
+        if (car['engineCC'] != null && (car['engineCC'] as num) > 0) {
+          _ccController.text = car['engineCC'].toString();
+        }
+        if (car['fuelType'] != null && car['fuelType'].toString().toLowerCase().contains('diesel')) {
+          _selectedFuelType = 'Diesel (Peninsular)';
+        }
+      }
+      if (car['bodyType'] != null) {
+        final bt = car['bodyType'].toString().toLowerCase();
+        if (bt.contains('sedan') || bt.contains('saloon')) {
+          _bodyType = 'Saloon';
+        } else {
+          _bodyType = 'Non-Saloon';
+        }
+      }
+    }
+
+    if (price != null) {
+      _priceController.text = price.toStringAsFixed(0);
+      _downpaymentController.text = (price * 0.1).toStringAsFixed(0);
     }
     _interestController.text = '3.0';
     _tenureController.text = '7';
+
+    _dailyDistanceController.text = '40';
+    _daysController.text = '22';
+    if (_consumptionController.text.isEmpty) {
+      _consumptionController.text = '6.0';
+    }
+    _tankCapacityController.text = '40';
+
+    _loadFuelPrices();
+
+    if (car != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _calculateLoan();
+        _calculateRoadTax();
+        _calculateFuelCost();
+      });
+    }
+  }
+
+  Future<void> _loadFuelPrices() async {
+    try {
+      final prices = await _dataService.fetchLatestFuelPrices();
+      if (mounted && prices.isNotEmpty) {
+        setState(() {
+          prices.forEach((key, val) {
+            if (val is num) {
+              _liveFuelPrices[key] = val.toDouble();
+            }
+          });
+          if (_monthlyFuelCost > 0) {
+            _calculateFuelCost();
+          }
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -49,11 +143,15 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
     _tenureController.dispose();
     _ccController.dispose();
     _powerController.dispose();
+    _dailyDistanceController.dispose();
+    _daysController.dispose();
+    _consumptionController.dispose();
+    _tankCapacityController.dispose();
     super.dispose();
   }
 
   void _calculateLoan() {
-    if (!_loanFormKey.currentState!.validate()) return;
+    if (_loanFormKey.currentState == null || !_loanFormKey.currentState!.validate()) return;
 
     double price = double.parse(_priceController.text.trim());
     double downpayment = double.tryParse(_downpaymentController.text.trim()) ?? 0;
@@ -103,7 +201,7 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
   }
 
   void _calculateRoadTax() {
-    if (!_roadTaxFormKey.currentState!.validate()) return;
+    if (_roadTaxFormKey.currentState == null || !_roadTaxFormKey.currentState!.validate()) return;
 
     double tax = 0;
 
@@ -177,12 +275,38 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
     });
   }
 
+  void _calculateFuelCost() {
+    if (_fuelFormKey.currentState == null || !_fuelFormKey.currentState!.validate()) return;
+
+    double dailyKm = double.tryParse(_dailyDistanceController.text.trim()) ?? 0;
+    int days = int.tryParse(_daysController.text.trim()) ?? 0;
+    double consumption = double.tryParse(_consumptionController.text.trim()) ?? 0;
+    double fuelPrice = _liveFuelPrices[_selectedFuelType] ?? 2.05;
+    double tankCap = double.tryParse(_tankCapacityController.text.trim()) ?? 0;
+
+    double monthlyKm = dailyKm * days;
+    double costPerKm = (consumption / 100) * fuelPrice;
+    double monthlyFuel = monthlyKm * costPerKm;
+    double annualFuel = monthlyFuel * 12;
+    double fullTank = tankCap * fuelPrice;
+    double range = consumption > 0 ? (tankCap / consumption) * 100 : 0;
+
+    setState(() {
+      _monthlyKm = monthlyKm;
+      _costPerKm = costPerKm;
+      _monthlyFuelCost = monthlyFuel;
+      _annualFuelCost = annualFuel;
+      _fullTankCost = fullTank;
+      _fullTankRange = range;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Calculators', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text('Cost Calculator', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: AppColors.secondary,
         iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
@@ -193,14 +317,72 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
           tabs: const [
             Tab(text: 'Loan'),
             Tab(text: 'Road Tax'),
+            Tab(text: 'Fuel'),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _buildLoanCalculator(),
-          _buildRoadTaxCalculator(),
+          if (widget.car != null) _buildCarBanner(),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildLoanCalculator(),
+                _buildRoadTaxCalculator(),
+                _buildFuelCalculator(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCarBanner() {
+    final car = widget.car!;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.directions_car, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${car['make']} ${car['model']}',
+                  style: const TextStyle(
+                    color: AppColors.secondary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Auto-filled from car specifications',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -274,10 +456,10 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
             ),
             if (_monthlyInstalment > 0) ...[
               const SizedBox(height: 32),
-              const Text('Estimated Monthly Instalment', style: TextStyle(color: AppColors.textSecondary)),
-              Text(
-                'RM ${_monthlyInstalment.toStringAsFixed(2)}',
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.primary),
+              _buildResultCard(
+                title: 'Estimated Monthly Instalment',
+                primaryValue: 'RM ${_monthlyInstalment.toStringAsFixed(2)}',
+                subtitle: 'Based on ${_tenureController.text} years loan at ${_interestController.text}% interest',
               ),
             ]
           ],
@@ -342,15 +524,241 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
             ),
             if (_roadTax > 0) ...[
               const SizedBox(height: 32),
-              const Text('Annual Road Tax', style: TextStyle(color: AppColors.textSecondary)),
-              Text(
-                'RM ${_roadTax.toStringAsFixed(2)}',
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.primary),
+              _buildResultCard(
+                title: 'Annual Road Tax',
+                primaryValue: 'RM ${_roadTax.toStringAsFixed(2)}',
+                subtitle: '$_region • $_ownership • $_bodyType',
               ),
             ]
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildFuelCalculator() {
+    final fuelTypes = [
+      'RON95 (Floating)',
+      'RON97',
+      'Diesel (Peninsular)',
+      'RON95 (BUDI 95)',
+    ];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Form(
+        key: _fuelFormKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDropdownField(
+              'Fuel Type & Rate',
+              _selectedFuelType,
+              fuelTypes,
+              (val) {
+                if (val != null) {
+                  setState(() {
+                    _selectedFuelType = val;
+                  });
+                  if (_monthlyFuelCost > 0) {
+                    _calculateFuelCost();
+                  }
+                }
+              },
+              displayLabels: {
+                for (var f in fuelTypes)
+                  f: '$f (RM ${(_liveFuelPrices[f] ?? 2.05).toStringAsFixed(2)}/L)'
+              },
+            ),
+            const SizedBox(height: 4),
+            _buildValidatedField(
+              label: 'Fuel Economy (L/100km)',
+              controller: _consumptionController,
+              hint: 'e.g. 6.0',
+              validator: (val) {
+                if (val == null || val.trim().isEmpty) return 'Fuel economy is required';
+                final n = double.tryParse(val.trim());
+                if (n == null || n <= 0) return 'Enter a valid consumption (greater than 0)';
+                if (n > 40) return 'Consumption seems too high';
+                return null;
+              },
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildValidatedField(
+                    label: 'Daily Distance (km)',
+                    controller: _dailyDistanceController,
+                    hint: 'e.g. 40',
+                    validator: (val) {
+                      if (val == null || val.trim().isEmpty) return 'Required';
+                      final n = double.tryParse(val.trim());
+                      if (n == null || n <= 0) return 'Must be > 0';
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildValidatedField(
+                    label: 'Days / Month',
+                    controller: _daysController,
+                    hint: 'e.g. 22',
+                    isInteger: true,
+                    validator: (val) {
+                      if (val == null || val.trim().isEmpty) return 'Required';
+                      final n = int.tryParse(val.trim());
+                      if (n == null || n <= 0 || n > 31) return '1 to 31 days';
+                      return null;
+                    },
+                  ),
+                ),
+              ],
+            ),
+            _buildValidatedField(
+              label: 'Fuel Tank Capacity (L) (Optional)',
+              controller: _tankCapacityController,
+              hint: 'e.g. 40',
+              validator: (val) {
+                if (val == null || val.trim().isEmpty) return null;
+                final n = double.tryParse(val.trim());
+                if (n == null || n <= 0) return 'Enter a valid capacity';
+                return null;
+              },
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.secondary,
+                minimumSize: const Size(double.infinity, 56),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              onPressed: _calculateFuelCost,
+              child: const Text('Calculate Fuel Expense', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+            if (_monthlyFuelCost > 0) ...[
+              const SizedBox(height: 32),
+              _buildFuelResultCard(),
+            ]
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultCard({
+    required String title,
+    required String primaryValue,
+    required String subtitle,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+          const SizedBox(height: 6),
+          Text(
+            primaryValue,
+            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.primary),
+          ),
+          const SizedBox(height: 8),
+          Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFuelResultCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Estimated Monthly Fuel', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+          const SizedBox(height: 6),
+          Text(
+            'RM ${_monthlyFuelCost.toStringAsFixed(2)}',
+            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.primary),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Based on ${_monthlyKm.toStringAsFixed(0)} km / month (${_dailyDistanceController.text} km/day × ${_daysController.text} days)',
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildStatItem('Cost / km', 'RM ${_costPerKm.toStringAsFixed(2)}'),
+              _buildStatItem('Annual Fuel', 'RM ${_annualFuelCost.toStringAsFixed(2)}'),
+              if (_fullTankCost > 0)
+                _buildStatItem('Full Tank', 'RM ${_fullTankCost.toStringAsFixed(2)}')
+              else if (_fullTankRange > 0)
+                _buildStatItem('Est. Range', '~${_fullTankRange.toStringAsFixed(0)} km'),
+            ],
+          ),
+          if (_fullTankRange > 0 && _fullTankCost > 0) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.local_gas_station_outlined, size: 16, color: AppColors.secondary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Full tank (${_tankCapacityController.text}L) provides ~${_fullTankRange.toStringAsFixed(0)} km cruising range.',
+                      style: const TextStyle(fontSize: 12, color: AppColors.secondary, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(color: AppColors.secondary, fontSize: 14, fontWeight: FontWeight.bold)),
+      ],
     );
   }
 
@@ -398,7 +806,13 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
     );
   }
 
-  Widget _buildDropdownField(String label, String value, List<String> items, ValueChanged<String?> onChanged) {
+  Widget _buildDropdownField(
+    String label,
+    String value,
+    List<String> items,
+    ValueChanged<String?> onChanged, {
+    Map<String, String>? displayLabels,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Column(
@@ -418,7 +832,14 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
                 value: value,
                 isExpanded: true,
                 onChanged: onChanged,
-                items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                items: items.map((e) => DropdownMenuItem(
+                  value: e,
+                  child: Text(
+                    displayLabels?[e] ?? e,
+                    style: const TextStyle(fontSize: 13),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                )).toList(),
               ),
             ),
           ),

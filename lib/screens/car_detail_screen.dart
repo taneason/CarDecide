@@ -182,7 +182,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => OwnershipCalculators(initialPrice: car['price'].toDouble())),
+                          MaterialPageRoute(builder: (context) => OwnershipCalculators(car: car)),
                         );
                       },
                       child: const Text('Calculate Cost of Ownership', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
