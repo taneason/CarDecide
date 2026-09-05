@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 import '../services/data_service.dart';
 
@@ -118,7 +119,14 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
 
   Future<void> _loadFuelPrices() async {
     try {
-      final prices = await _dataService.fetchLatestFuelPrices();
+      final results = await Future.wait([
+        _dataService.fetchLatestFuelPrices(),
+        SharedPreferences.getInstance(),
+      ]);
+      final prices = results[0] as Map<String, dynamic>;
+      final prefs = results[1] as SharedPreferences;
+      final savedFuel = prefs.getString('preferred_fuel');
+
       if (mounted && prices.isNotEmpty) {
         setState(() {
           prices.forEach((key, val) {
@@ -126,6 +134,11 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
               _liveFuelPrices[key] = val.toDouble();
             }
           });
+          if (widget.car == null || widget.car!['isEV'] != true) {
+            if (savedFuel != null && savedFuel.isNotEmpty && _liveFuelPrices.containsKey(savedFuel)) {
+              _selectedFuelType = savedFuel;
+            }
+          }
           if (_monthlyFuelCost > 0) {
             _calculateFuelCost();
           }
