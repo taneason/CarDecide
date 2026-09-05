@@ -43,7 +43,9 @@ class DynamicFetchService {
         "engine_cc": "Number (Engine capacity in cc, use 0 for EV)",
         "fuel_consumption": "Number (L/100km, or kWh/100km for EV)",
         "motor_power": "Number (Horsepower / PS)",
-        "is_ev": "Boolean (true if fully electric)"
+        "is_ev": "Boolean (true if fully electric)",
+        "transmission": "String (e.g. 4-speed Automatic, 6-speed Automatic, CVT, D-CVT, 7-speed DCT, 5-speed Manual, or Single-speed Direct Drive for EV)",
+        "body_type": "String (e.g. Sedan, SUV, Hatchback, MPV, Pickup Truck, Coupe)"
       }
       Do not include markdown blocks like ```json. Just return the raw JSON.
       ''';
@@ -67,7 +69,6 @@ class DynamicFetchService {
       String model = data['model']?.toString() ?? 'Unknown';
       
       final supabase = Supabase.instance.client;
-      
 
       final existingResponse = await supabase
           .from('cars')
@@ -82,8 +83,6 @@ class DynamicFetchService {
       }
       
       String? imageUrl = await _carApiService.fetchCarImageUrl(make, model);
-
-
       imageUrl ??= 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&q=80&w=800';
 
       final car = CarModel(
@@ -96,13 +95,34 @@ class DynamicFetchService {
         fuelConsumption: (data['fuel_consumption'] as num?)?.toDouble() ?? 6.0,
         motorPower: (data['motor_power'] as num?)?.toDouble() ?? 0.0,
         imageUrl: imageUrl,
+        transmission: data['transmission']?.toString(),
+        bodyType: data['body_type']?.toString(),
       );
 
       final map = car.toSupabaseMap();
       map.remove('motor_power');
       
-      final insertResponse = await supabase.from('cars').insert(map).select().single();
-      final savedCar = CarModel.fromJson(insertResponse);
+      Map<String, dynamic> insertResponse;
+      try {
+        insertResponse = await supabase.from('cars').insert(map).select().single();
+      } catch (insertError) {
+        final errStr = insertError.toString().toLowerCase();
+        if (errStr.contains('transmission') || errStr.contains('body_type') || errStr.contains('column')) {
+          map.remove('transmission');
+          map.remove('body_type');
+          insertResponse = await supabase.from('cars').insert(map).select().single();
+        } else {
+          rethrow;
+        }
+      }
+      
+      var savedCar = CarModel.fromJson(insertResponse);
+      if (savedCar.transmission == null && car.transmission != null) {
+        savedCar = savedCar.copyWith(
+          transmission: car.transmission,
+          bodyType: car.bodyType,
+        );
+      }
       
       final cachedCars = await _carApiService.getCachedCars();
       cachedCars.add(savedCar);
@@ -149,7 +169,9 @@ class DynamicFetchService {
         "engine_cc": "Number (Engine capacity in cc, use 0 for EV)",
         "fuel_consumption": "Number (L/100km, or kWh/100km for EV)",
         "motor_power": "Number (Horsepower / PS)",
-        "is_ev": "Boolean (true if fully electric)"
+        "is_ev": "Boolean (true if fully electric)",
+        "transmission": "String (e.g. 4-speed Automatic, 6-speed Automatic, CVT, D-CVT, 7-speed DCT, 5-speed Manual, or Single-speed Direct Drive for EV)",
+        "body_type": "String (e.g. Sedan, SUV, Hatchback, MPV, Pickup Truck, Coupe)"
       }
       Do not include markdown blocks like ```json. Just return the raw JSON.
       ''';
@@ -183,7 +205,7 @@ class DynamicFetchService {
       String model = data['model']?.toString() ?? 'Unknown';
       
       final supabase = Supabase.instance.client;
-      
+
       final existingResponse = await supabase
           .from('cars')
           .select()
@@ -209,13 +231,34 @@ class DynamicFetchService {
         fuelConsumption: (data['fuel_consumption'] as num?)?.toDouble() ?? 6.0,
         motorPower: (data['motor_power'] as num?)?.toDouble() ?? 0.0,
         imageUrl: imageUrl,
+        transmission: data['transmission']?.toString(),
+        bodyType: data['body_type']?.toString(),
       );
 
       final map = car.toSupabaseMap();
       map.remove('motor_power');
       
-      final insertResponse = await supabase.from('cars').insert(map).select().single();
-      final savedCar = CarModel.fromJson(insertResponse);
+      Map<String, dynamic> insertResponse;
+      try {
+        insertResponse = await supabase.from('cars').insert(map).select().single();
+      } catch (insertError) {
+        final errStr = insertError.toString().toLowerCase();
+        if (errStr.contains('transmission') || errStr.contains('body_type') || errStr.contains('column')) {
+          map.remove('transmission');
+          map.remove('body_type');
+          insertResponse = await supabase.from('cars').insert(map).select().single();
+        } else {
+          rethrow;
+        }
+      }
+      
+      var savedCar = CarModel.fromJson(insertResponse);
+      if (savedCar.transmission == null && car.transmission != null) {
+        savedCar = savedCar.copyWith(
+          transmission: car.transmission,
+          bodyType: car.bodyType,
+        );
+      }
       
       final cachedCars = await _carApiService.getCachedCars();
       cachedCars.add(savedCar);

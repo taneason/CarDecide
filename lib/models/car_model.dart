@@ -77,7 +77,7 @@ class CarModel {
   }
 
   Map<String, dynamic> toSupabaseMap() {
-    return {
+    final map = <String, dynamic>{
       'make': make,
       'model': model,
       'price': price,
@@ -87,6 +87,13 @@ class CarModel {
       'fuel_consumption': fuelConsumption,
       'image_url': imageUrl,
     };
+    if (transmission != null && transmission!.isNotEmpty) {
+      map['transmission'] = transmission;
+    }
+    if (bodyType != null && bodyType!.isNotEmpty) {
+      map['body_type'] = bodyType;
+    }
+    return map;
   }
 
   CarModel copyWith({
