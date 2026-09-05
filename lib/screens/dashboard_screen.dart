@@ -330,7 +330,14 @@ class DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.primary),
+                    GestureDetector(
+                      onTap: () => _showFuelPriceInfo(context),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        color: Colors.transparent,
+                        child: const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.primary),
+                      ),
+                    ),
                   ],
                 ),
                 if (dateStr.isNotEmpty)
@@ -454,6 +461,149 @@ class DashboardScreenState extends State<DashboardScreen> {
           ],
         );
       },
+    );
+  }
+
+  void _showFuelPriceInfo(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: const [
+                    Icon(Icons.info_rounded, color: AppColors.primary, size: 22),
+                    SizedBox(width: 10),
+                    Text(
+                      'Fuel Price Information',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.secondary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Official Source: data.gov.my (Ministry of Finance)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildFuelInfoItem(
+                          'RON95 & Subsidies',
+                          '• Floating: Official unsubsidised retail market rate.\n• BUDI 95: Targeted fuel subsidy rate for eligible citizens under BUDI MADANI.\n• SKPS: Subsidised petrol fleet quotas for public transport & taxis.',
+                        ),
+                        const SizedBox(height: 12),
+                        _buildFuelInfoItem(
+                          'RON97',
+                          'Unsubsidised premium fuel priced according to weekly Automatic Pricing Mechanism (APM) and global MOPS benchmarks.',
+                        ),
+                        const SizedBox(height: 12),
+                        _buildFuelInfoItem(
+                          'Diesel & Targeted Retargeting',
+                          '• Peninsular: Market price following nationwide diesel retargeting.\n• E.M. (Sabah & Sarawak): Subsidised retail rate maintained for East Malaysia.\n• BUDI & SKDS: Targeted cash aid / fleet cards for smallholders and logistics transport companies.',
+                        ),
+                        const SizedBox(height: 12),
+                        _buildFuelInfoItem(
+                          'Weekly Update Schedule',
+                          'Fuel prices are updated every Wednesday/Thursday in accordance with the Malaysian Ministry of Finance weekly announcement.',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.secondary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      'Got it',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFuelInfoItem(String title, String desc) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: AppColors.secondary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            desc,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
