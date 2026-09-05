@@ -19,7 +19,7 @@ class DecisionSummaryScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Decision Summary', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.secondary,
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
       ),
