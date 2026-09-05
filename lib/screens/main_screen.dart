@@ -157,22 +157,28 @@ class MainScreenState extends State<MainScreen> {
         index: _currentIndex,
         children: _pages,
       ),
-      bottomNavigationBar: BottomAppBar(
-        elevation: 12,
-        padding: EdgeInsets.zero,
-        clipBehavior: Clip.none,
-        shadowColor: Colors.black.withValues(alpha: 0.15),
+      bottomNavigationBar: Container(
         color: Colors.white,
-        child: SizedBox(
-          height: 64,
-          child: Row(
-            children: [
-              _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
-              _buildNavItem(1, Icons.bar_chart_outlined, Icons.bar_chart, 'Compare'),
-              _buildCameraButton(),
-              _buildNavItem(2, Icons.chat_bubble_outline, Icons.chat_bubble, 'Advisor'),
-              _buildNavItem(3, Icons.person_outline, Icons.person, 'Profile'),
-            ],
+        child: SafeArea(
+          top: false,
+          child: BottomAppBar(
+            elevation: 12,
+            padding: EdgeInsets.zero,
+            clipBehavior: Clip.none,
+            shadowColor: Colors.black.withValues(alpha: 0.15),
+            color: Colors.white,
+            child: SizedBox(
+              height: 64,
+              child: Row(
+                children: [
+                  _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
+                  _buildNavItem(1, Icons.bar_chart_outlined, Icons.bar_chart, 'Compare'),
+                  _buildCameraButton(),
+                  _buildNavItem(2, Icons.chat_bubble_outline, Icons.chat_bubble, 'Advisor'),
+                  _buildNavItem(3, Icons.person_outline, Icons.person, 'Profile'),
+                ],
+              ),
+            ),
           ),
         ),
       ),

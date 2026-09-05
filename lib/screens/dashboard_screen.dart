@@ -75,7 +75,7 @@ class DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 32),
                   _buildFuelPriceCard(),
                   
-                  const SizedBox(height: 100),
+                  const SizedBox(height: 110),
                 ],
               ),
             ),
@@ -90,9 +90,10 @@ class DashboardScreenState extends State<DashboardScreen> {
     final user = _authService.currentUser;
     final userName = user == null ? 'Guest' : (_profileData?['full_name'] ?? 'User');
     final avatarUrl = _profileData?['avatar_url'];
+    final topPadding = MediaQuery.paddingOf(context).top;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
+      padding: EdgeInsets.fromLTRB(20, topPadding + 16, 20, 24),
       decoration: const BoxDecoration(
         color: AppColors.secondary,
       ),
@@ -126,8 +127,6 @@ class DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
-
-
 
   Widget _buildQuickActions(BuildContext context) {
     return Row(
@@ -182,11 +181,15 @@ class DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 16),
               Text(
                 title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.secondary),
               ),
               const SizedBox(height: 4),
               Text(
                 subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: Colors.grey, fontSize: 12),
               ),
             ],
@@ -251,29 +254,38 @@ class DashboardScreenState extends State<DashboardScreen> {
           children: [
             Positioned(
               left: 20,
-              bottom: 20,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('Nearby Dealerships', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, shadows: [Shadow(blurRadius: 4)])),
-                  Text('Explore verified showrooms in MY', style: TextStyle(color: Colors.white, fontSize: 14, shadows: [Shadow(blurRadius: 4)])),
-                ],
-              ),
-            ),
-            Positioned(
               right: 20,
-              bottom: 20,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const DealershipMapScreen()));
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
-                icon: const Icon(Icons.location_on, size: 16),
-                label: const Text('View Map', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              bottom: 16,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Text('Nearby Dealerships', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, shadows: [Shadow(blurRadius: 4)])),
+                        SizedBox(height: 2),
+                        Text('Explore verified showrooms in MY', style: TextStyle(color: Colors.white, fontSize: 13, shadows: [Shadow(blurRadius: 4)]), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const DealershipMapScreen()));
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    ),
+                    icon: const Icon(Icons.location_on, size: 16),
+                    label: const Text('View Map', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
+                ],
               ),
             ),
           ],
@@ -412,15 +424,19 @@ class DashboardScreenState extends State<DashboardScreen> {
                               ),
                               Expanded(
                                 flex: 3,
-                                child: Text(
-                                  priceStr != null ? 'RM $priceStr' : '—',
-                                  textAlign: TextAlign.right,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: priceStr != null
-                                        ? AppColors.secondary
-                                        : AppColors.textSecondary,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    priceStr != null ? 'RM $priceStr' : '—',
+                                    textAlign: TextAlign.right,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: priceStr != null
+                                          ? AppColors.secondary
+                                          : AppColors.textSecondary,
+                                    ),
                                   ),
                                 ),
                               ),

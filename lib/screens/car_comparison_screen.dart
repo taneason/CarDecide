@@ -244,8 +244,11 @@ class CarComparisonScreenState extends State<CarComparisonScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text('${car?['make'] ?? ""} ${car?['model'] ?? ""}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 4),
-                  Text(_formatCurrency((car?['price'] as num?)?.toDouble() ?? 0.0), style: const TextStyle(color: AppColors.primary, fontSize: 14, fontWeight: FontWeight.bold)),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(_formatCurrency((car?['price'] as num?)?.toDouble() ?? 0.0), style: const TextStyle(color: AppColors.primary, fontSize: 14, fontWeight: FontWeight.bold)),
+                  ),
                   const SizedBox(height: 12),
                   if (isBestValue)
                     Container(
