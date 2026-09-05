@@ -303,7 +303,6 @@ class DashboardScreenState extends State<DashboardScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header: title + info icon + updated date
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -333,7 +332,6 @@ class DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            // Table card
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -348,7 +346,6 @@ class DashboardScreenState extends State<DashboardScreen> {
               ),
               child: Column(
                 children: [
-                  // Column headers
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     child: Row(
@@ -380,7 +377,6 @@ class DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   const Divider(height: 1, indent: 16, endIndent: 16),
-                  // Fuel rows
                   ...fuels.asMap().entries.map((entry) {
                     final i = entry.key;
                     final f = entry.value;
@@ -395,7 +391,6 @@ class DashboardScreenState extends State<DashboardScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
                           child: Row(
                             children: [
-                              // Colored dot
                               Container(
                                 width: 10,
                                 height: 10,
@@ -405,7 +400,6 @@ class DashboardScreenState extends State<DashboardScreen> {
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              // Fuel name
                               Expanded(
                                 flex: 5,
                                 child: Text(
@@ -416,7 +410,6 @@ class DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                 ),
                               ),
-                              // Price
                               Expanded(
                                 flex: 3,
                                 child: Text(

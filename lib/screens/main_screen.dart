@@ -105,8 +105,8 @@ class MainScreenState extends State<MainScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 36,
+              height: 36,
               decoration: const BoxDecoration(
                 color: AppColors.primary,
                 shape: BoxShape.circle,
@@ -114,7 +114,7 @@ class MainScreenState extends State<MainScreen> {
               child: const Icon(
                 Icons.camera_alt_rounded,
                 color: Colors.white,
-                size: 22,
+                size: 20,
               ),
             ),
             const SizedBox(height: 3),
