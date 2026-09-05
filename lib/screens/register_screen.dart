@@ -18,10 +18,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _authService = AuthService();
   bool _isLoading = false;
   bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
 
   String? _emailError;
   String? _passwordError;
   String? _confirmPasswordError;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
 
   Future<void> _handleRegister() async {
     setState(() {
@@ -105,50 +114,188 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isLoading = true);
+    try {
+      await _authService.signInWithGoogle();
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => MainScreen()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        String message = 'Google Sign-In failed: ${e.toString()}';
+        if (e.toString().contains('canceled')) {
+          message = 'Sign-in was cancelled.';
+        } else if (e.toString().contains('network')) {
+          message = 'Network error. Please check your connection.';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message), backgroundColor: AppColors.accentRed),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(backgroundColor: Colors.white, elevation: 0, leading: const BackButton(color: AppColors.secondary)),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: const BackButton(color: AppColors.secondary),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.directions_car, color: AppColors.primary, size: 22),
+            SizedBox(width: 8),
+            Text('CarDecide', style: TextStyle(color: AppColors.secondary, fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        centerTitle: true,
+      ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Create Account', style: TextStyle(color: AppColors.secondary, fontSize: 32, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              const Text('Start your CarDecide journey', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
-              const SizedBox(height: 40),
-              
-              _buildLabel('EMAIL ADDRESS'),
-              _buildTextField(_emailController, 'amir@example.com', Icons.email_outlined, false, errorText: _emailError),
-              const SizedBox(height: 24),
-              
-              _buildLabel('PASSWORD'),
-              _buildTextField(_passwordController, '********', Icons.lock_outline, true, errorText: _passwordError),
-              const SizedBox(height: 24),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight - 24.0),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Create Account',
+                        style: TextStyle(color: AppColors.secondary, fontSize: 28, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Sign up to compare, evaluate, and find your next drive',
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                      ),
+                      const SizedBox(height: 28),
+                      
+                      _buildLabel('EMAIL ADDRESS'),
+                      _buildTextField(_emailController, 'amir@example.com', Icons.email_outlined, false, false, errorText: _emailError),
+                      const SizedBox(height: 18),
+                      
+                      _buildLabel('PASSWORD'),
+                      _buildTextField(
+                        _passwordController,
+                        'At least 6 characters',
+                        Icons.lock_outline,
+                        true,
+                        _isPasswordVisible,
+                        onToggleVisibility: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                        errorText: _passwordError,
+                      ),
+                      const SizedBox(height: 18),
 
-              _buildLabel('CONFIRM PASSWORD'),
-              _buildTextField(_confirmPasswordController, '********', Icons.lock_outline, true, errorText: _confirmPasswordError),
-              
-              const SizedBox(height: 40),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.secondary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      _buildLabel('CONFIRM PASSWORD'),
+                      _buildTextField(
+                        _confirmPasswordController,
+                        'Re-enter your password',
+                        Icons.lock_outline,
+                        true,
+                        _isConfirmPasswordVisible,
+                        onToggleVisibility: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+                        errorText: _confirmPasswordError,
+                      ),
+                      
+                      const SizedBox(height: 28),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 54,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.secondary,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            elevation: 2,
+                          ),
+                          onPressed: _isLoading ? null : _handleRegister,
+                          child: _isLoading 
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text('Create Account', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+                      Row(
+                        children: const [
+                          Expanded(child: Divider()),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: Text('OR', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                          ),
+                          Expanded(child: Divider()),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 54,
+                        child: OutlinedButton(
+                          onPressed: _isLoading ? null : _handleGoogleSignIn,
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            side: BorderSide(color: Colors.grey.shade300),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Image.asset('assets/images/googleLogo.png', height: 22),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'Sign up with Google',
+                                style: TextStyle(color: AppColors.secondary, fontSize: 15, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const Spacer(),
+
+                      const SizedBox(height: 24),
+                      Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text('Already have an account? ', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                            GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                color: Colors.transparent,
+                                child: const Text('Sign In', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 14)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Center(
+                        child: Text(
+                          'By signing up, you agree to our Terms and Privacy Policy.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey, fontSize: 11),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                   ),
-                  onPressed: _isLoading ? null : _handleRegister,
-                  child: _isLoading 
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Sign Up', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -161,18 +308,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String hint, IconData icon, bool isPassword, {String? errorText}) {
+  Widget _buildTextField(
+    TextEditingController controller,
+    String hint,
+    IconData icon,
+    bool isPassword,
+    bool isVisible, {
+    VoidCallback? onToggleVisibility,
+    String? errorText,
+  }) {
     return TextField(
       controller: controller,
-      obscureText: isPassword && !_isPasswordVisible,
+      obscureText: isPassword && !isVisible,
       decoration: InputDecoration(
         errorText: errorText,
         hintText: hint,
+        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
         prefixIcon: Icon(icon, color: Colors.grey),
-        suffixIcon: isPassword ? IconButton(
-          icon: Icon(_isPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: Colors.grey),
-          onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
-        ) : null,
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(isVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: Colors.grey),
+                onPressed: onToggleVisibility,
+              )
+            : null,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
