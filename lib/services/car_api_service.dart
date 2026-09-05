@@ -145,6 +145,13 @@ class CarApiService {
             return [];
           }
 
+          final missingTrans = cars.where((c) => c.transmission == null || c.transmission!.isEmpty).length;
+          if (missingTrans > 5) {
+            debugPrint('Detected $missingTrans cars missing transmission. Invalidating cache to sync from Supabase.');
+            await file.delete();
+            return [];
+          }
+
           if (cars.isNotEmpty) {
             debugPrint('Loaded ${cars.length} cars from local persistent cache file.');
             return cars;

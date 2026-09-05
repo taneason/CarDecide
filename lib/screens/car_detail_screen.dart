@@ -21,16 +21,51 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
   final _supabase = Supabase.instance.client;
   final _authService = AuthService();
   bool _isLoadingFav = true;
+  late Map<String, dynamic> _car;
 
   @override
   void initState() {
     super.initState();
+    _car = Map<String, dynamic>.from(widget.car);
     _checkFavouriteStatus();
+    _fetchLiveCarFromDatabase();
+  }
+
+  Future<void> _fetchLiveCarFromDatabase() async {
+    final carId = _car['id'];
+    final make = _car['make'];
+    final model = _car['model'];
+    try {
+      Map<String, dynamic>? liveData;
+      if (carId != null && carId.toString().isNotEmpty) {
+        liveData = await _supabase
+            .from('cars')
+            .select()
+            .eq('id', carId)
+            .maybeSingle();
+      }
+      if (liveData == null && make != null && model != null) {
+        liveData = await _supabase
+            .from('cars')
+            .select()
+            .ilike('make', make.toString().trim())
+            .ilike('model', model.toString().trim())
+            .maybeSingle();
+      }
+      if (liveData != null && mounted) {
+        setState(() {
+          _car = {..._car, ...liveData!};
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching live car details: $e');
+    }
   }
 
   Future<void> _checkFavouriteStatus() async {
     final user = _authService.currentUser;
-    if (user == null || widget.car['id'] == null) {
+    final carId = _car['id'] ?? widget.car['id'];
+    if (user == null || carId == null) {
       if (mounted) setState(() => _isLoadingFav = false);
       return;
     }
@@ -64,7 +99,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
       return;
     }
 
-    final carId = widget.car['id'];
+    final carId = _car['id'] ?? widget.car['id'];
     if (carId == null) return;
 
     final wasFavourite = _isFavourite;
@@ -124,7 +159,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final car = widget.car;
+    final car = _car;
     final String? imageUrl = car['imageUrl'] ?? car['image_url'];
     final bool isEV = car['isEV'] == true ||
         car['is_ev'] == true ||
@@ -183,7 +218,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                 children: [
                   imageUrl != null && imageUrl.isNotEmpty
                       ? Hero(
-                          tag: 'car_img_${car['id'] ?? (car['make'].toString() + ' ' + car['model'].toString())}',
+                          tag: 'car_img_${car['id'] ?? "${car['make']} ${car['model']}"}',
                           child: CachedNetworkImage(
                             imageUrl: imageUrl,
                             fit: BoxFit.cover,
@@ -291,8 +326,8 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
-                                  )
-                                else if (bodyType != null && bodyType.isNotEmpty)
+                                  ),
+                                if (bodyType != null && bodyType.isNotEmpty)
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                     margin: const EdgeInsets.only(right: 6),
@@ -443,12 +478,36 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _buildSpecCard(
-                          icon: Icons.directions_car_rounded,
+                          icon: Icons.settings_suggest_rounded,
                           iconColor: const Color(0xFF8B5CF6),
-                          title: 'Transmission / Body',
+                          title: 'Transmission',
                           value: transmission != null && transmission.isNotEmpty
                               ? transmission
-                              : (bodyType != null && bodyType.isNotEmpty ? bodyType : 'Automatic'),
+                              : (isEV ? 'Single-speed Direct Drive' : 'Automatic'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildSpecCard(
+                          icon: Icons.directions_car_rounded,
+                          iconColor: const Color(0xFF0EA5E9),
+                          title: 'Body Type',
+                          value: bodyType != null && bodyType.isNotEmpty
+                              ? bodyType
+                              : 'Standard',
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildSpecCard(
+                          icon: Icons.receipt_long_rounded,
+                          iconColor: const Color(0xFFF59E0B),
+                          title: 'Est. Road Tax',
+                          value: 'RM ${roadTaxAnnual.round()} / year',
                         ),
                       ),
                     ],
@@ -639,6 +698,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
     required String value,
   }) {
     return Container(
+      constraints: const BoxConstraints(minHeight: 106),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -677,10 +737,10 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
             value,
             style: const TextStyle(
               color: AppColors.textPrimary,
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.bold,
             ),
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
         ],
