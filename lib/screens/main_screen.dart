@@ -101,38 +101,52 @@ class MainScreenState extends State<MainScreen> {
         index: _currentIndex,
         children: _pages,
       ),
-      floatingActionButton: Container(
-        height: 56,
-        width: 56,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: const LinearGradient(
-            colors: [Color(0xFF00897B), AppColors.primary],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.35),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            height: 56,
+            width: 56,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [AppColors.secondary, AppColors.primary],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.secondary.withValues(alpha: 0.35),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: () => SnapIdentifyHelper.handleSnapIdentify(context),
-            child: const Center(
-              child: Icon(
-                Icons.camera_alt_rounded,
-                color: Colors.white,
-                size: 26,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => SnapIdentifyHelper.handleSnapIdentify(context),
+                child: const Center(
+                  child: Icon(
+                    Icons.camera_alt_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                ),
               ),
             ),
           ),
-        ),
+          const SizedBox(height: 4),
+          const Text(
+            'Camera',
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
       floatingActionButtonLocation: const _LoweredDockedFabLocation(offsetY: 16.0),
       bottomNavigationBar: BottomAppBar(

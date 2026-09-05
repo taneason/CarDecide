@@ -7,7 +7,6 @@ import 'dealership_map_screen.dart';
 import 'ownership_calculators.dart';
 import 'transit_comparator_screen.dart';
 import 'car_browse_screen.dart';
-import '../services/snap_identify_helper.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -67,8 +66,6 @@ class DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 24),
-                  _buildSnapIdentifyCard(context),
                   const SizedBox(height: 24),
                   _buildQuickActions(context),
                   const SizedBox(height: 24),
@@ -130,61 +127,7 @@ class DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildSnapIdentifyCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: const Color(0xFF2575FC).withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 8))],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _handleSnapIdentify(context),
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
-                  child: const Icon(Icons.camera_alt, color: Colors.white, size: 32),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Snap & Identify',
-                        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'See a car you like? Snap a photo to get its specs and price instantly!',
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13, height: 1.4),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.chevron_right, color: Colors.white),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
-  Future<void> _handleSnapIdentify(BuildContext context) async {
-    await SnapIdentifyHelper.handleSnapIdentify(context);
-  }
 
   Widget _buildQuickActions(BuildContext context) {
     return Row(
