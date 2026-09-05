@@ -39,11 +39,32 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
   final _consumptionController = TextEditingController();
   final _tankCapacityController = TextEditingController();
   String _selectedFuelType = 'RON95 (Floating)';
+  final List<String> _fuelTypes = const [
+    'RON95 (Floating)',
+    'RON95 (BUDI 95)',
+    'RON95 (SKPS)',
+    'RON97',
+    'Diesel (Peninsular)',
+    'Diesel (Sbh/Swk)',
+    'Diesel (SKDS)',
+    'Diesel (BUDI)',
+  ];
   Map<String, double> _liveFuelPrices = {
-    'RON95 (Floating)': 2.05,
-    'RON97': 3.47,
-    'Diesel (Peninsular)': 3.35,
+    'RON95 (Floating)': 3.82,
     'RON95 (BUDI 95)': 1.99,
+    'RON95 (SKPS)': 2.05,
+    'RON97': 4.30,
+    'Diesel (Peninsular)': 3.35,
+    'Diesel (Sbh/Swk)': 2.15,
+    'Diesel (SKDS)': 2.15,
+    'Diesel (BUDI)': 2.10,
+  };
+  bool _isEvMode = false;
+  String _selectedEvTariff = 'Home AC (TNB)';
+  final Map<String, double> _evTariffRates = const {
+    'Home AC (TNB)': 0.57,
+    'Commercial AC': 0.85,
+    'Public DC Fast': 1.40,
   };
   double _monthlyFuelCost = 0;
   double _annualFuelCost = 0;
@@ -69,10 +90,18 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
       }
       if (car['isEV'] == true) {
         _fuelType = 'EV';
+        _isEvMode = true;
         if (car['motorPower'] != null) {
           _powerController.text = car['motorPower'].toString();
         } else if (car['power'] != null) {
           _powerController.text = car['power'].toString();
+        }
+        if (car['batteryCapacity'] != null) {
+          _tankCapacityController.text = car['batteryCapacity'].toString();
+        } else if (car['battery_capacity'] != null) {
+          _tankCapacityController.text = car['battery_capacity'].toString();
+        } else {
+          _tankCapacityController.text = '60';
         }
       } else {
         if (car['engineCC'] != null && (car['engineCC'] as num) > 0) {
@@ -294,15 +323,17 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
     double dailyKm = double.tryParse(_dailyDistanceController.text.trim()) ?? 0;
     int days = int.tryParse(_daysController.text.trim()) ?? 0;
     double consumption = double.tryParse(_consumptionController.text.trim()) ?? 0;
-    double fuelPrice = _liveFuelPrices[_selectedFuelType] ?? 2.05;
-    double tankCap = double.tryParse(_tankCapacityController.text.trim()) ?? 0;
+    double energyRate = _isEvMode 
+        ? (_evTariffRates[_selectedEvTariff] ?? 0.57) 
+        : (_liveFuelPrices[_selectedFuelType] ?? 2.05);
+    double capacity = double.tryParse(_tankCapacityController.text.trim()) ?? 0;
 
     double monthlyKm = dailyKm * days;
-    double costPerKm = (consumption / 100) * fuelPrice;
+    double costPerKm = (consumption / 100) * energyRate;
     double monthlyFuel = monthlyKm * costPerKm;
     double annualFuel = monthlyFuel * 12;
-    double fullTank = tankCap * fuelPrice;
-    double range = consumption > 0 ? (tankCap / consumption) * 100 : 0;
+    double fullTank = capacity * energyRate;
+    double range = consumption > 0 ? (capacity / consumption) * 100 : 0;
 
     setState(() {
       _monthlyKm = monthlyKm;
@@ -550,13 +581,6 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
   }
 
   Widget _buildFuelCalculator() {
-    final fuelTypes = [
-      'RON95 (Floating)',
-      'RON97',
-      'Diesel (Peninsular)',
-      'RON95 (BUDI 95)',
-    ];
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Form(
@@ -564,35 +588,150 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildDropdownField(
-              'Fuel Type & Rate',
-              _selectedFuelType,
-              fuelTypes,
-              (val) {
-                if (val != null) {
-                  setState(() {
-                    _selectedFuelType = val;
-                  });
-                  if (_monthlyFuelCost > 0) {
-                    _calculateFuelCost();
-                  }
-                }
-              },
-              displayLabels: {
-                for (var f in fuelTypes)
-                  f: '$f (RM ${(_liveFuelPrices[f] ?? 2.05).toStringAsFixed(2)}/L)'
-              },
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: const EdgeInsets.all(4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isEvMode = false;
+                          if (_consumptionController.text.isEmpty || _consumptionController.text == '15.0') {
+                            _consumptionController.text = '6.0';
+                          }
+                          if (_tankCapacityController.text == '60' || _tankCapacityController.text.isEmpty) {
+                            _tankCapacityController.text = '45';
+                          }
+                        });
+                        if (_monthlyFuelCost > 0) _calculateFuelCost();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: !_isEvMode ? Colors.white : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: !_isEvMode
+                              ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.local_gas_station_rounded, size: 18, color: !_isEvMode ? AppColors.primary : Colors.grey),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Petrol / Diesel',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: !_isEvMode ? AppColors.textPrimary : Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isEvMode = true;
+                          if (_consumptionController.text.isEmpty || _consumptionController.text == '6.0') {
+                            _consumptionController.text = '15.0';
+                          }
+                          if (_tankCapacityController.text == '45' || _tankCapacityController.text.isEmpty) {
+                            _tankCapacityController.text = '60';
+                          }
+                        });
+                        if (_monthlyFuelCost > 0) _calculateFuelCost();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _isEvMode ? Colors.white : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: _isEvMode
+                              ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.bolt_rounded, size: 18, color: _isEvMode ? AppColors.accentGreen : Colors.grey),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Electric (EV)',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: _isEvMode ? AppColors.textPrimary : Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(height: 16),
+            if (!_isEvMode)
+              _buildDropdownField(
+                'Fuel Standard (8 Types)',
+                _selectedFuelType,
+                _fuelTypes,
+                (val) {
+                  if (val != null) {
+                    setState(() {
+                      _selectedFuelType = val;
+                    });
+                    if (_monthlyFuelCost > 0) {
+                      _calculateFuelCost();
+                    }
+                  }
+                },
+                displayLabels: {
+                  for (var f in _fuelTypes)
+                    f: '$f (RM ${(_liveFuelPrices[f] ?? 2.05).toStringAsFixed(2)}/L)'
+                },
+              )
+            else
+              _buildDropdownField(
+                'EV Electricity Tariff Rate',
+                _selectedEvTariff,
+                _evTariffRates.keys.toList(),
+                (val) {
+                  if (val != null) {
+                    setState(() {
+                      _selectedEvTariff = val;
+                    });
+                    if (_monthlyFuelCost > 0) {
+                      _calculateFuelCost();
+                    }
+                  }
+                },
+                displayLabels: {
+                  for (var e in _evTariffRates.keys)
+                    e: '$e (RM ${(_evTariffRates[e]!).toStringAsFixed(2)}/kWh)'
+                },
+              ),
             const SizedBox(height: 4),
             _buildValidatedField(
-              label: 'Fuel Economy (L/100km)',
+              label: _isEvMode ? 'Energy Consumption (kWh/100km)' : 'Fuel Economy (L/100km)',
               controller: _consumptionController,
-              hint: 'e.g. 6.0',
+              hint: _isEvMode ? 'e.g. 15.0' : 'e.g. 6.0',
               validator: (val) {
-                if (val == null || val.trim().isEmpty) return 'Fuel economy is required';
+                if (val == null || val.trim().isEmpty) return 'Consumption is required';
                 final n = double.tryParse(val.trim());
                 if (n == null || n <= 0) return 'Enter a valid consumption (greater than 0)';
-                if (n > 40) return 'Consumption seems too high';
+                if (n > 60) return 'Consumption seems unusually high';
                 return null;
               },
             ),
@@ -629,9 +768,9 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
               ],
             ),
             _buildValidatedField(
-              label: 'Fuel Tank Capacity (L) (Optional)',
+              label: _isEvMode ? 'Battery Usable Capacity (kWh) (Optional)' : 'Fuel Tank Capacity (L) (Optional)',
               controller: _tankCapacityController,
-              hint: 'e.g. 40',
+              hint: _isEvMode ? 'e.g. 60' : 'e.g. 45',
               validator: (val) {
                 if (val == null || val.trim().isEmpty) return null;
                 final n = double.tryParse(val.trim());
@@ -647,7 +786,10 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               onPressed: _calculateFuelCost,
-              child: const Text('Calculate Fuel Expense', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: Text(
+                _isEvMode ? 'Calculate EV Energy Expense' : 'Calculate Fuel Expense',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
             ),
             if (_monthlyFuelCost > 0) ...[
               const SizedBox(height: 32),
@@ -695,6 +837,9 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
   }
 
   Widget _buildFuelResultCard() {
+    final unitLabel = _isEvMode ? 'kWh' : 'L';
+    final fullLabel = _isEvMode ? 'Full Charge' : 'Full Tank';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -712,7 +857,10 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Estimated Monthly Fuel', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+          Text(
+            _isEvMode ? 'Estimated Monthly Energy (Charging)' : 'Estimated Monthly Fuel',
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          ),
           const SizedBox(height: 6),
           Text(
             'RM ${_monthlyFuelCost.toStringAsFixed(2)}',
@@ -730,9 +878,9 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildStatItem('Cost / km', 'RM ${_costPerKm.toStringAsFixed(2)}'),
-              _buildStatItem('Annual Fuel', 'RM ${_annualFuelCost.toStringAsFixed(2)}'),
+              _buildStatItem(_isEvMode ? 'Annual Energy' : 'Annual Fuel', 'RM ${_annualFuelCost.toStringAsFixed(2)}'),
               if (_fullTankCost > 0)
-                _buildStatItem('Full Tank', 'RM ${_fullTankCost.toStringAsFixed(2)}')
+                _buildStatItem(fullLabel, 'RM ${_fullTankCost.toStringAsFixed(2)}')
               else if (_fullTankRange > 0)
                 _buildStatItem('Est. Range', '~${_fullTankRange.toStringAsFixed(0)} km'),
             ],
@@ -747,11 +895,15 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.local_gas_station_outlined, size: 16, color: AppColors.secondary),
+                  Icon(
+                    _isEvMode ? Icons.bolt_rounded : Icons.local_gas_station_outlined,
+                    size: 16,
+                    color: _isEvMode ? AppColors.accentGreen : AppColors.secondary,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Full tank (${_tankCapacityController.text}L) provides ~${_fullTankRange.toStringAsFixed(0)} km cruising range.',
+                      '$fullLabel (${_tankCapacityController.text}$unitLabel) provides ~${_fullTankRange.toStringAsFixed(0)} km range.',
                       style: const TextStyle(fontSize: 12, color: AppColors.secondary, fontWeight: FontWeight.w500),
                     ),
                   ),

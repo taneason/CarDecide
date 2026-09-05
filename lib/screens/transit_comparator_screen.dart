@@ -27,7 +27,23 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
   double _distKM = 0.0;
   double _fuelPrice = 2.05;
   String _selectedFuelType = 'RON95 (Floating)';
-  Map<String, dynamic> _liveFuelPrices = {'RON95 (Floating)': 2.05, 'RON97': 3.47, 'Diesel (Peninsular)': 3.35};
+  Map<String, dynamic> _liveFuelPrices = {
+    'RON95 (Floating)': 3.82,
+    'RON95 (BUDI 95)': 1.99,
+    'RON95 (SKPS)': 2.05,
+    'RON97': 4.30,
+    'Diesel (Peninsular)': 3.35,
+    'Diesel (Sbh/Swk)': 2.15,
+    'Diesel (SKDS)': 2.15,
+    'Diesel (BUDI)': 2.10,
+  };
+  String _selectedEvTariff = 'Home AC (TNB)';
+  final Map<String, double> _evTariffRates = const {
+    'Home AC (TNB)': 0.57,
+    'Commercial AC': 0.85,
+    'Public DC Fast': 1.40,
+  };
+  bool get _isCurrentCarEv => _selectedCar != null && (_selectedCar!['isEV'] == true || _selectedCar!['is_ev'] == true || _selectedCar!['fuelType'] == 'Electric' || _selectedCar!['fuel_type'] == 'Electric');
   double _consumption = 6.0;
   double _tollCost = 0.0;
   
@@ -276,7 +292,10 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
         
 
         _tollCost = _distKM > 10 ? (_distKM - 10) * 0.15 : 0;
-        _drivingCost = ((_distKM / 100) * _consumption * _fuelPrice) + _tollCost;
+        double effectiveRate = _isCurrentCarEv
+            ? (_evTariffRates[_selectedEvTariff] ?? 0.57)
+            : _fuelPrice;
+        _drivingCost = ((_distKM / 100) * _consumption * effectiveRate) + _tollCost;
         _drivingTime = (_distKM * 1.5).toInt() + 5; 
 
 
@@ -628,7 +647,7 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
               const Divider(height: 32),
               Row(
                 children: [
-                  Expanded(child: _buildComparisonCard('Driving', 'RM ${_drivingCost.toStringAsFixed(2)}', '$_drivingTime min', Icons.directions_car, AppColors.primary)),
+                  Expanded(child: _buildComparisonCard(_isCurrentCarEv ? 'Driving (EV)' : 'Driving', 'RM ${_drivingCost.toStringAsFixed(2)}', '$_drivingTime min', _isCurrentCarEv ? Icons.electric_car_rounded : Icons.directions_car, AppColors.primary)),
                   const SizedBox(width: 16),
                   Expanded(
                     child: _transitAvailable 
@@ -765,7 +784,7 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
                   child: Text(
                     _selectedCar == null 
                         ? 'Select your car' 
-                        : "${_selectedCar!['make']} ${_selectedCar!['model']} (${_selectedCar!['fuelConsumption']}L/100km)",
+                        : "${_selectedCar!['make']} ${_selectedCar!['model']} (${_selectedCar!['fuelConsumption']}${_isCurrentCarEv ? 'kWh' : 'L'}/100km)",
                     style: TextStyle(
                       color: _selectedCar == null ? Colors.grey.shade600 : AppColors.textPrimary,
                       fontSize: 15,
@@ -782,23 +801,52 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade200)),
           child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedFuelType,
-              isExpanded: true,
-              onChanged: (val) {
-                if (val != null) {
-                  setState(() {
-                    _selectedFuelType = val;
-                    _fuelPrice = (_liveFuelPrices[val] as num?)?.toDouble() ?? 2.05;
-                    _calculateRoute();
-                  });
-                }
-              },
-              items: _liveFuelPrices.keys.map((type) => DropdownMenuItem(
-                value: type, 
-                child: Text("$type (RM ${(_liveFuelPrices[type] as num?)?.toStringAsFixed(2)})")
-              )).toList(),
-            ),
+            child: _isCurrentCarEv
+              ? DropdownButton<String>(
+                  value: _selectedEvTariff,
+                  isExpanded: true,
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        _selectedEvTariff = val;
+                        _calculateRoute();
+                      });
+                    }
+                  },
+                  items: _evTariffRates.keys.map((tariff) => DropdownMenuItem(
+                    value: tariff,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.bolt_rounded, size: 18, color: AppColors.accentGreen),
+                        const SizedBox(width: 8),
+                        Text("$tariff (RM ${(_evTariffRates[tariff]!).toStringAsFixed(2)}/kWh)"),
+                      ],
+                    ),
+                  )).toList(),
+                )
+              : DropdownButton<String>(
+                  value: _liveFuelPrices.containsKey(_selectedFuelType) ? _selectedFuelType : (_liveFuelPrices.keys.where((k) => !k.startsWith('_')).firstOrNull ?? 'RON95 (Floating)'),
+                  isExpanded: true,
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        _selectedFuelType = val;
+                        _fuelPrice = (_liveFuelPrices[val] as num?)?.toDouble() ?? 2.05;
+                        _calculateRoute();
+                      });
+                    }
+                  },
+                  items: _liveFuelPrices.keys.where((k) => !k.startsWith('_')).map((type) => DropdownMenuItem(
+                    value: type, 
+                    child: Row(
+                      children: [
+                        const Icon(Icons.local_gas_station_rounded, size: 18, color: AppColors.primary),
+                        const SizedBox(width: 8),
+                        Text("$type (RM ${((_liveFuelPrices[type] as num?)?.toDouble() ?? 2.05).toStringAsFixed(2)}/L)"),
+                      ],
+                    ),
+                  )).toList(),
+                ),
           ),
         ),
       ],

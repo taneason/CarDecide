@@ -186,9 +186,13 @@ class ProfileScreenState extends State<ProfileScreen> {
   }
 
   String _getShortFuelName(String fuel) {
-    if (fuel.contains('BUDI')) return 'BUDI 95';
+    if (fuel.contains('BUDI 95')) return 'BUDI 95';
+    if (fuel.contains('SKPS')) return 'SKPS 95';
     if (fuel.contains('Floating')) return 'RON95';
     if (fuel.contains('97')) return 'RON97';
+    if (fuel.contains('SKDS')) return 'SKDS Diesel';
+    if (fuel.contains('Diesel (BUDI)')) return 'BUDI Diesel';
+    if (fuel.contains('Sbh/Swk')) return 'East Msia Diesel';
     if (fuel.contains('Diesel')) return 'Diesel';
     if (fuel.contains('Electric') || fuel.contains('EV')) return 'EV Electric';
     return fuel;
@@ -215,16 +219,40 @@ class ProfileScreenState extends State<ProfileScreen> {
         'icon': Icons.verified_user_outlined,
       },
       {
+        'key': 'RON95 (SKPS)',
+        'title': 'RON95 (SKPS Transport)',
+        'subtitle': 'Subsidised rate for public land transport',
+        'icon': Icons.directions_bus_outlined,
+      },
+      {
         'key': 'RON97',
         'title': 'RON97 Premium',
         'subtitle': 'High octane performance euro 4M / 5 petrol',
         'icon': Icons.speed_rounded,
       },
       {
-        'key': 'Diesel (Euro 5)',
-        'title': 'Diesel (Euro 5)',
-        'subtitle': 'Euro 5 standard diesel for commercial & 4x4s',
+        'key': 'Diesel (Peninsular)',
+        'title': 'Diesel (Peninsular Euro 5)',
+        'subtitle': 'Euro 5 standard diesel for Peninsular Malaysia',
         'icon': Icons.local_shipping_outlined,
+      },
+      {
+        'key': 'Diesel (Sbh/Swk)',
+        'title': 'Diesel (Sabah & Sarawak)',
+        'subtitle': 'Subsidised diesel rate for East Malaysia',
+        'icon': Icons.terrain_rounded,
+      },
+      {
+        'key': 'Diesel (SKDS)',
+        'title': 'Diesel (SKDS Fleet)',
+        'subtitle': 'Targeted fleet subsidy for logistics and transport',
+        'icon': Icons.airport_shuttle_outlined,
+      },
+      {
+        'key': 'Diesel (BUDI)',
+        'title': 'Diesel (BUDI Madani)',
+        'subtitle': 'Direct citizen subsidy rate under BUDI Madani',
+        'icon': Icons.card_giftcard_rounded,
       },
       {
         'key': 'Electric (EV)',
