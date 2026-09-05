@@ -102,7 +102,7 @@ class DynamicFetchService {
       final map = car.toSupabaseMap();
       map.remove('motor_power');
       
-      Map<String, dynamic> insertResponse;
+      Map<String, dynamic>? insertResponse;
       try {
         insertResponse = await supabase.from('cars').insert(map).select().single();
       } catch (insertError) {
@@ -110,13 +110,13 @@ class DynamicFetchService {
         if (errStr.contains('transmission') || errStr.contains('body_type') || errStr.contains('column')) {
           map.remove('transmission');
           map.remove('body_type');
-          insertResponse = await supabase.from('cars').insert(map).select().single();
-        } else {
-          rethrow;
+          try {
+            insertResponse = await supabase.from('cars').insert(map).select().single();
+          } catch (_) {}
         }
       }
       
-      var savedCar = CarModel.fromJson(insertResponse);
+      var savedCar = insertResponse != null ? CarModel.fromJson(insertResponse) : car;
       if (savedCar.transmission == null && car.transmission != null) {
         savedCar = savedCar.copyWith(
           transmission: car.transmission,
@@ -238,7 +238,7 @@ class DynamicFetchService {
       final map = car.toSupabaseMap();
       map.remove('motor_power');
       
-      Map<String, dynamic> insertResponse;
+      Map<String, dynamic>? insertResponse;
       try {
         insertResponse = await supabase.from('cars').insert(map).select().single();
       } catch (insertError) {
@@ -246,13 +246,13 @@ class DynamicFetchService {
         if (errStr.contains('transmission') || errStr.contains('body_type') || errStr.contains('column')) {
           map.remove('transmission');
           map.remove('body_type');
-          insertResponse = await supabase.from('cars').insert(map).select().single();
-        } else {
-          rethrow;
+          try {
+            insertResponse = await supabase.from('cars').insert(map).select().single();
+          } catch (_) {}
         }
       }
       
-      var savedCar = CarModel.fromJson(insertResponse);
+      var savedCar = insertResponse != null ? CarModel.fromJson(insertResponse) : car;
       if (savedCar.transmission == null && car.transmission != null) {
         savedCar = savedCar.copyWith(
           transmission: car.transmission,
