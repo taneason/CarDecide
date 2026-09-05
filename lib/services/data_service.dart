@@ -126,6 +126,39 @@ class DataService {
       }
     }
 
+    try {
+      final String jsonStr = await rootBundle.loadString('assets/data/cars.json');
+      final List<dynamic> jsonList = json.decode(jsonStr);
+      final Map<String, dynamic> specMap = {
+        for (final item in jsonList)
+          '${item['make']}_${item['model']}'.toLowerCase(): item,
+      };
+
+      carList = carList.map((c) {
+        final key = '${c.make}_${c.model}'.toLowerCase();
+        final spec = specMap[key];
+        if (spec != null) {
+          final String? realTrans = (c.transmission != null && c.transmission!.isNotEmpty)
+              ? c.transmission
+              : spec['transmission']?.toString();
+          final String? realBody = (c.bodyType != null && c.bodyType!.isNotEmpty)
+              ? c.bodyType
+              : spec['bodyType']?.toString();
+          final int realCC = c.engineCC > 0 ? c.engineCC : ((spec['engineCC'] as num?)?.toInt() ?? 0);
+          final double realCons = c.fuelConsumption > 0 ? c.fuelConsumption : ((spec['fuelConsumption'] as num?)?.toDouble() ?? 6.0);
+          return c.copyWith(
+            transmission: realTrans,
+            bodyType: realBody,
+            engineCC: realCC,
+            fuelConsumption: realCons,
+          );
+        }
+        return c;
+      }).toList();
+    } catch (e) {
+      debugPrint('Spec enrichment error: $e');
+    }
+
     carList = _carApiService.healCarImages(carList);
 
     await _carApiService.saveCarsToCache(carList);
@@ -153,6 +186,17 @@ class DataService {
         debugPrint('Successfully saved ${newCars.length} NEW cars to Supabase database!');
       } else {
         debugPrint('All cars already exist in Supabase, no new inserts needed.');
+      }
+
+      for (final c in cars) {
+        if (c.transmission != null && c.transmission!.isNotEmpty) {
+          try {
+            await _supabase.from('cars').update({
+              'transmission': c.transmission,
+              'body_type': c.bodyType,
+            }).eq('make', c.make).eq('model', c.model);
+          } catch (_) {}
+        }
       }
     } catch (e) {
       debugPrint('Supabase save failed (Check permissions or connection): $e');
