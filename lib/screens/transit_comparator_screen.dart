@@ -384,7 +384,6 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
           ),
           if (_isLoading) 
             const Center(child: CircularProgressIndicator()),
-          _buildInstructionOverlay(),
         ],
       ),
     );
@@ -556,6 +555,27 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
           _buildSearchField(_originSearchController, "Search Start Point", true, _originSuggestions, _isSearchingOrigin),
           const SizedBox(height: 8),
           _buildSearchField(_destinationSearchController, "Search Destination", false, _destinationSuggestions, _isSearchingDestination),
+          if ((_origin == null || _destination == null) &&
+              _originSuggestions.isEmpty &&
+              _destinationSuggestions.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: IgnorePointer(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withValues(alpha: 0.92),
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 8)],
+                  ),
+                  child: Text(
+                    _isSelectingOrigin ? '📍 Tap to set Start Point' : '🏁 Tap to set Destination',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -961,35 +981,6 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildInstructionOverlay() {
-    if (_origin != null && _destination != null) return const SizedBox.shrink();
-
-    if (_originSuggestions.isNotEmpty || _destinationSuggestions.isNotEmpty) return const SizedBox.shrink();
-    
-    String message = _isSelectingOrigin ? '📍 Tap to set Start Point' : '🏁 Tap to set Destination';
-    
-    return Positioned(
-      top: 150,
-      left: 20,
-      right: 20,
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: AppColors.secondary.withValues(alpha: 0.9), 
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10)]
-          ),
-          child: Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-          ),
-        ),
       ),
     );
   }
