@@ -7,7 +7,6 @@ class ConfigService {
   static String orsApiKey = '';
 
   static Future<void> initialize() async {
-    // 1. Try local .env first if available
     try {
       await dotenv.load(fileName: '.env');
       geminiApiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
@@ -16,7 +15,6 @@ class ConfigService {
       debugPrint('ConfigService: No local .env file found. Fetching from Supabase...');
     }
 
-    // 2. Fetch from Supabase app_config table
     if (geminiApiKey.isEmpty || orsApiKey.isEmpty) {
       try {
         final response = await Supabase.instance.client

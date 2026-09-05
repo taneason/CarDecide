@@ -13,7 +13,6 @@ class OwnershipCalculators extends StatefulWidget {
 class _OwnershipCalculatorsState extends State<OwnershipCalculators> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // Loan form
   final _loanFormKey = GlobalKey<FormState>();
   final _priceController = TextEditingController();
   final _downpaymentController = TextEditingController();
@@ -21,7 +20,6 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
   final _tenureController = TextEditingController();
   double _monthlyInstalment = 0;
 
-  // Road tax form
   final _roadTaxFormKey = GlobalKey<FormState>();
   final _ccController = TextEditingController();
   final _powerController = TextEditingController();
@@ -231,7 +229,7 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
               controller: _downpaymentController,
               hint: 'e.g. 8000 (leave 0 if none)',
               validator: (val) {
-                if (val == null || val.trim().isEmpty) return null; // optional
+                if (val == null || val.trim().isEmpty) return null;
                 final n = double.tryParse(val.trim());
                 if (n == null || n < 0) return 'Enter a valid amount (0 or more)';
                 final price = double.tryParse(_priceController.text.trim()) ?? 0;

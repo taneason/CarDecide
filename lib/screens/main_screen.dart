@@ -100,33 +100,51 @@ class MainScreenState extends State<MainScreen> {
         onTap: () => SnapIdentifyHelper.handleSnapIdentify(context),
         splashColor: AppColors.primary.withValues(alpha: 0.1),
         highlightColor: Colors.transparent,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
+        child: SizedBox(
+          height: 64,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Positioned(
+                top: -14,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.35),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    const Text(
+                      'Camera',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: const Icon(
-                Icons.camera_alt_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-            const SizedBox(height: 3),
-            const Text(
-              'Camera',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -141,6 +159,8 @@ class MainScreenState extends State<MainScreen> {
       ),
       bottomNavigationBar: BottomAppBar(
         elevation: 12,
+        padding: EdgeInsets.zero,
+        clipBehavior: Clip.none,
         shadowColor: Colors.black.withValues(alpha: 0.15),
         color: Colors.white,
         child: SizedBox(
