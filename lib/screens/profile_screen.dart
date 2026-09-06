@@ -9,6 +9,7 @@ import '../services/auth_service.dart';
 import '../constants/app_constants.dart';
 import '../services/car_api_service.dart';
 import '../services/data_service.dart';
+import '../services/avatar_cache_manager.dart';
 import 'login_screen.dart';
 import 'change_password_screen.dart';
 import 'favourites_screen.dart';
@@ -547,7 +548,10 @@ class ProfileScreenState extends State<ProfileScreen> {
                             radius: 46,
                             backgroundColor: AppColors.secondary,
                             backgroundImage: _profileData?['avatar_url'] != null 
-                                ? CachedNetworkImageProvider(_profileData!['avatar_url']) 
+                                ? CachedNetworkImageProvider(
+                                    _profileData!['avatar_url'],
+                                    cacheManager: AvatarCacheManager.instance,
+                                  ) 
                                 : null,
                             child: _profileData?['avatar_url'] == null
                                 ? Icon(
@@ -865,7 +869,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
         }
         final parent = _selectedImage!.parent;
         final parentName = parent.path.split('/').last.split('\\').last.toLowerCase();
-        if (parentName != 'cache' && parentName != 'fm_cache' && parentName != 'libcachedimagedata') {
+        if (parentName != 'cache' && parentName != 'fm_cache' && parentName != 'libcachedimagedata' && parentName != 'avatarcache') {
           if (parent.existsSync()) {
             parent.deleteSync(recursive: true);
           }
@@ -999,6 +1003,12 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
         await prefs.setString(cacheKey, json.encode(localData));
       } catch (_) {}
 
+      if (_selectedImage != null) {
+        try {
+          await AvatarCacheManager.instance.emptyCache();
+        } catch (_) {}
+      }
+
       if (_selectedImage != null && oldFilesToRemove.isNotEmpty) {
         try {
           oldFilesToRemove.removeWhere((name) => newAvatarUrl != null && newAvatarUrl.contains(name));
@@ -1046,7 +1056,10 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     if (_selectedImage != null) {
       currentAvatar = FileImage(_selectedImage!);
     } else if (widget.avatarUrl != null) {
-      currentAvatar = CachedNetworkImageProvider(widget.avatarUrl!);
+      currentAvatar = CachedNetworkImageProvider(
+        widget.avatarUrl!,
+        cacheManager: AvatarCacheManager.instance,
+      );
     }
 
     return Padding(

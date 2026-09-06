@@ -1,8 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../constants/app_constants.dart';
 import '../services/auth_service.dart';
 import '../services/data_service.dart';
+import '../services/avatar_cache_manager.dart';
 import 'dealership_map_screen.dart';
 import 'ownership_calculators.dart';
 import 'transit_comparator_screen.dart';
@@ -36,16 +40,32 @@ class DashboardScreenState extends State<DashboardScreen> {
       final user = _authService.currentUser;
       if (user == null) return;
 
+      final prefs = await SharedPreferences.getInstance();
+      final cacheKey = 'cached_profile_${user.id}';
+      final cachedJson = prefs.getString(cacheKey);
+      if (cachedJson != null) {
+        try {
+          final Map<String, dynamic> localData = json.decode(cachedJson);
+          if (mounted) {
+            setState(() {
+              _profileData = localData;
+            });
+          }
+        } catch (_) {}
+      }
+
       final data = await _supabase
           .from('profiles')
           .select()
           .eq('id', user.id)
-          .single();
+          .single()
+          .timeout(const Duration(seconds: 4));
 
       if (mounted) {
         setState(() {
           _profileData = data;
         });
+        await prefs.setString(cacheKey, json.encode(data));
       }
     } catch (e) {
       debugPrint('Fetch profile error: $e');
@@ -116,7 +136,12 @@ class DashboardScreenState extends State<DashboardScreen> {
               CircleAvatar(
                 radius: 20,
                 backgroundColor: AppColors.primary,
-                backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                backgroundImage: avatarUrl != null 
+                    ? CachedNetworkImageProvider(
+                        avatarUrl, 
+                        cacheManager: AvatarCacheManager.instance,
+                      ) 
+                    : null,
                 child: avatarUrl == null
                     ? const Icon(Icons.person, color: Colors.white)
                     : null,
