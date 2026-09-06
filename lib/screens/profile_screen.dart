@@ -1003,9 +1003,9 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
         await prefs.setString(cacheKey, json.encode(localData));
       } catch (_) {}
 
-      if (_selectedImage != null) {
+      if (_selectedImage != null && widget.avatarUrl != null && widget.avatarUrl!.isNotEmpty) {
         try {
-          await AvatarCacheManager.instance.emptyCache();
+          await AvatarCacheManager.instance.removeFile(widget.avatarUrl!);
         } catch (_) {}
       }
 
