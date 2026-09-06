@@ -137,6 +137,73 @@ class ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  void _openSavedCars() {
+    final user = _authService.currentUser;
+    if (user != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const FavouritesScreen()),
+      ).then((_) => _fetchFavouritesCount());
+    } else {
+      _showSignInRequiredDialog();
+    }
+  }
+
+  void _showSignInRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.accentRed.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.favorite_rounded, color: AppColors.accentRed, size: 24),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Sign In Required',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.textPrimary),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Saved vehicles are synced to your cloud account. Please sign in or register to view and save your favourite cars.',
+          style: TextStyle(fontSize: 14, height: 1.4, color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Not Now', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+              ).then((_) => refresh());
+            },
+            child: const Text('Sign In / Register', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _showEditProfileSheet() async {
     final user = _authService.currentUser;
     if (user == null) return;
@@ -494,17 +561,10 @@ class ProfileScreenState extends State<ProfileScreen> {
                       _buildStatItem(
                         label: 'Saved Cars',
                         value: user == null ? '0' : _favouriteCount.toString(),
-                        subtitle: 'View shortlist',
+                        subtitle: user == null ? 'Sign in to view' : 'View shortlist',
                         icon: Icons.favorite_rounded,
                         iconColor: AppColors.accentRed,
-                        onTap: () {
-                          if (user != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const FavouritesScreen()),
-                            ).then((_) => _fetchFavouritesCount());
-                          }
-                        },
+                        onTap: _openSavedCars,
                       ),
                       const SizedBox(width: 14),
                       _buildStatItem(
@@ -538,14 +598,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                       icon: Icons.favorite_border_rounded,
                       title: 'Saved Vehicles',
                       trailing: '${user == null ? 0 : _favouriteCount} cars',
-                      onTap: () {
-                        if (user != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const FavouritesScreen()),
-                          ).then((_) => _fetchFavouritesCount());
-                        }
-                      },
+                      onTap: _openSavedCars,
                     ),
                   ]),
                   const SizedBox(height: 20),

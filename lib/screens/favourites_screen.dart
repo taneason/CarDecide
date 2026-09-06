@@ -6,6 +6,7 @@ import '../services/auth_service.dart';
 import '../services/data_service.dart';
 import '../models/car_model.dart';
 import 'car_detail_screen.dart';
+import 'login_screen.dart';
 
 class FavouritesScreen extends StatefulWidget {
   const FavouritesScreen({super.key});
@@ -31,7 +32,15 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
   Future<void> _loadFavourites() async {
     try {
       final user = _authService.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        if (mounted) {
+          setState(() {
+            _favouriteCars = [];
+            _isLoading = false;
+          });
+        }
+        return;
+      }
 
       final favResponse = await _supabase
           .from('favourite_indicators')
@@ -81,13 +90,57 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
           : _favouriteCars.isEmpty
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.favorite_border, size: 80, color: Colors.grey.shade400),
-                      const SizedBox(height: 16),
-                      Text('No saved cars yet', style: TextStyle(fontSize: 18, color: Colors.grey.shade600)),
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.accentRed.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            _authService.currentUser == null ? Icons.favorite_rounded : Icons.favorite_border,
+                            size: 48,
+                            color: AppColors.accentRed,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _authService.currentUser == null ? 'Sign in to view saved cars' : 'No saved cars yet',
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _authService.currentUser == null
+                              ? 'Your saved vehicles are safely synced to your account. Sign in to access your shortlist.'
+                              : 'Tap the heart icon on any car to save it to your favourites list.',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.4),
+                        ),
+                        if (_authService.currentUser == null) ...[
+                          const SizedBox(height: 20),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                              ).then((_) => _loadFavourites());
+                            },
+                            child: const Text('Sign In / Register', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 )
               : ListView.builder(
