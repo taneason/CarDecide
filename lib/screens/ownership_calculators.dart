@@ -49,7 +49,7 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
     'Diesel (SKDS)',
     'Diesel (BUDI)',
   ];
-  Map<String, double> _liveFuelPrices = {
+  final Map<String, double> _liveFuelPrices = {
     'RON95 (Floating)': 3.82,
     'RON95 (BUDI 95)': 1.99,
     'RON95 (SKPS)': 2.05,
@@ -156,21 +156,54 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
       final prefs = results[1] as SharedPreferences;
       final savedFuel = prefs.getString('preferred_fuel');
 
-      if (mounted && prices.isNotEmpty) {
+      if (mounted) {
         setState(() {
-          prices.forEach((key, val) {
-            if (val is num) {
-              _liveFuelPrices[key] = val.toDouble();
+          if (prices.isNotEmpty) {
+            prices.forEach((key, val) {
+              if (val is num) {
+                _liveFuelPrices[key] = val.toDouble();
+              }
+            });
+          }
+
+          if (widget.car == null) {
+            final isEv = savedFuel != null && (savedFuel.contains('EV') || savedFuel.contains('Electric'));
+            if (isEv) {
+              _isEvMode = true;
+              _fuelType = 'EV';
+              if (_consumptionController.text.isEmpty || _consumptionController.text == '6.0') {
+                _consumptionController.text = '15.0';
+              }
+              if (_tankCapacityController.text.isEmpty || _tankCapacityController.text == '40' || _tankCapacityController.text == '45') {
+                _tankCapacityController.text = '60';
+              }
+              if (_powerController.text.isEmpty) {
+                _powerController.text = '150';
+              }
+            } else {
+              _isEvMode = false;
+              _fuelType = 'Petrol/Diesel';
+              if (savedFuel != null && savedFuel.isNotEmpty && _liveFuelPrices.containsKey(savedFuel)) {
+                _selectedFuelType = savedFuel;
+              }
+              if (_consumptionController.text.isEmpty || _consumptionController.text == '15.0') {
+                _consumptionController.text = '6.0';
+              }
+              if (_tankCapacityController.text.isEmpty || _tankCapacityController.text == '60') {
+                _tankCapacityController.text = '45';
+              }
+              if (_ccController.text.isEmpty) {
+                _ccController.text = '1500';
+              }
             }
-          });
-          if (widget.car == null || widget.car!['isEV'] != true) {
+          } else if (widget.car!['isEV'] != true) {
             if (savedFuel != null && savedFuel.isNotEmpty && _liveFuelPrices.containsKey(savedFuel)) {
               _selectedFuelType = savedFuel;
             }
           }
-          if (_monthlyFuelCost > 0) {
-            _calculateFuelCost();
-          }
+
+          _calculateFuelCost();
+          _calculateRoadTax();
         });
       }
     } catch (_) {}
@@ -243,70 +276,119 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
   }
 
   void _calculateRoadTax() {
-    if (_roadTaxFormKey.currentState == null || !_roadTaxFormKey.currentState!.validate()) return;
+    if (_roadTaxFormKey.currentState != null && !_roadTaxFormKey.currentState!.validate()) return;
 
     double tax = 0;
 
     if (_fuelType == 'EV') {
-      double kw = double.parse(_powerController.text.trim());
+      double kw = double.tryParse(_powerController.text.trim()) ?? 0;
+      if (kw <= 0) return;
       tax = _calculateEVTax(kw);
     } else {
-      int cc = int.parse(_ccController.text.trim());
+      int cc = int.tryParse(_ccController.text.trim()) ?? 0;
+      if (cc <= 0) return;
       bool isCompany = _ownership == 'Company';
 
       if (_region == 'Peninsular Malaysia') {
         if (_bodyType == 'Saloon') {
           if (isCompany) {
-            if (cc <= 1000) tax = 40;
-            else if (cc <= 1200) tax = 110;
-            else if (cc <= 1400) tax = 140;
-            else if (cc <= 1600) tax = 180;
-            else if (cc <= 1800) tax = 400 + (cc - 1600) * 0.80;
-            else if (cc <= 2000) tax = 560 + (cc - 1800) * 1.00;
-            else if (cc <= 2500) tax = 760 + (cc - 2000) * 2.00;
-            else if (cc <= 3000) tax = 1760 + (cc - 2500) * 5.00;
-            else tax = 4260 + (cc - 3000) * 9.00;
+            if (cc <= 1000) {
+              tax = 40;
+            } else if (cc <= 1200) {
+              tax = 110;
+            } else if (cc <= 1400) {
+              tax = 140;
+            } else if (cc <= 1600) {
+              tax = 180;
+            } else if (cc <= 1800) {
+              tax = 400 + (cc - 1600) * 0.80;
+            } else if (cc <= 2000) {
+              tax = 560 + (cc - 1800) * 1.00;
+            } else if (cc <= 2500) {
+              tax = 760 + (cc - 2000) * 2.00;
+            } else if (cc <= 3000) {
+              tax = 1760 + (cc - 2500) * 5.00;
+            } else {
+              tax = 4260 + (cc - 3000) * 9.00;
+            }
           } else {
-            if (cc <= 1000) tax = 20;
-            else if (cc <= 1200) tax = 55;
-            else if (cc <= 1400) tax = 70;
-            else if (cc <= 1600) tax = 90;
-            else if (cc <= 1800) tax = 200 + (cc - 1600) * 0.40;
-            else if (cc <= 2000) tax = 280 + (cc - 1800) * 0.50;
-            else if (cc <= 2500) tax = 380 + (cc - 2000) * 1.00;
-            else if (cc <= 3000) tax = 880 + (cc - 2500) * 2.50;
-            else tax = 2130 + (cc - 3000) * 4.50;
+            if (cc <= 1000) {
+              tax = 20;
+            } else if (cc <= 1200) {
+              tax = 55;
+            } else if (cc <= 1400) {
+              tax = 70;
+            } else if (cc <= 1600) {
+              tax = 90;
+            } else if (cc <= 1800) {
+              tax = 200 + (cc - 1600) * 0.40;
+            } else if (cc <= 2000) {
+              tax = 280 + (cc - 1800) * 0.50;
+            } else if (cc <= 2500) {
+              tax = 380 + (cc - 2000) * 1.00;
+            } else if (cc <= 3000) {
+              tax = 880 + (cc - 2500) * 2.50;
+            } else {
+              tax = 2130 + (cc - 3000) * 4.50;
+            }
           }
         } else {
           if (isCompany) {
-            if (cc <= 1600) tax = 200;
-            else if (cc <= 1800) tax = 250 + (cc - 1600) * 0.50;
-            else if (cc <= 2000) tax = 350 + (cc - 1800) * 0.80;
-            else if (cc <= 2500) tax = 510 + (cc - 2000) * 1.00;
-            else if (cc <= 3000) tax = 1010 + (cc - 2500) * 2.00;
-            else tax = 2010 + (cc - 3000) * 2.00;
+            if (cc <= 1600) {
+              tax = 200;
+            } else if (cc <= 1800) {
+              tax = 250 + (cc - 1600) * 0.50;
+            } else if (cc <= 2000) {
+              tax = 350 + (cc - 1800) * 0.80;
+            } else if (cc <= 2500) {
+              tax = 510 + (cc - 2000) * 1.00;
+            } else if (cc <= 3000) {
+              tax = 1010 + (cc - 2500) * 2.00;
+            } else {
+              tax = 2010 + (cc - 3000) * 2.00;
+            }
           } else {
-            if (cc <= 1000) tax = 20;
-            else if (cc <= 1200) tax = 85;
-            else if (cc <= 1400) tax = 100;
-            else if (cc <= 1600) tax = 120;
-            else if (cc <= 1800) tax = 300 + (cc - 1600) * 0.30;
-            else if (cc <= 2000) tax = 360 + (cc - 1800) * 0.40;
-            else if (cc <= 2500) tax = 440 + (cc - 2000) * 0.80;
-            else if (cc <= 3000) tax = 840 + (cc - 2500) * 1.60;
-            else tax = 1640 + (cc - 3000) * 1.60;
+            if (cc <= 1000) {
+              tax = 20;
+            } else if (cc <= 1200) {
+              tax = 85;
+            } else if (cc <= 1400) {
+              tax = 100;
+            } else if (cc <= 1600) {
+              tax = 120;
+            } else if (cc <= 1800) {
+              tax = 300 + (cc - 1600) * 0.30;
+            } else if (cc <= 2000) {
+              tax = 360 + (cc - 1800) * 0.40;
+            } else if (cc <= 2500) {
+              tax = 440 + (cc - 2000) * 0.80;
+            } else if (cc <= 3000) {
+              tax = 840 + (cc - 2500) * 1.60;
+            } else {
+              tax = 1640 + (cc - 3000) * 1.60;
+            }
           }
         }
       } else if (_region == 'Sabah' || _region == 'Sarawak') {
-        if (cc <= 1000) tax = 20;
-        else if (cc <= 1200) tax = 24;
-        else if (cc <= 1400) tax = 28;
-        else if (cc <= 1600) tax = 32;
-        else if (cc <= 1800) tax = 60 + (cc - 1600) * 0.10;
-        else if (cc <= 2000) tax = 80 + (cc - 1800) * 0.20;
-        else if (cc <= 2500) tax = 120 + (cc - 2000) * 0.50;
-        else if (cc <= 3000) tax = 370 + (cc - 2500) * 0.50;
-        else tax = 620 + (cc - 3000) * 1.00;
+        if (cc <= 1000) {
+          tax = 20;
+        } else if (cc <= 1200) {
+          tax = 24;
+        } else if (cc <= 1400) {
+          tax = 28;
+        } else if (cc <= 1600) {
+          tax = 32;
+        } else if (cc <= 1800) {
+          tax = 60 + (cc - 1600) * 0.10;
+        } else if (cc <= 2000) {
+          tax = 80 + (cc - 1800) * 0.20;
+        } else if (cc <= 2500) {
+          tax = 120 + (cc - 2000) * 0.50;
+        } else if (cc <= 3000) {
+          tax = 370 + (cc - 2500) * 0.50;
+        } else {
+          tax = 620 + (cc - 3000) * 1.00;
+        }
       } else {
         tax = 20;
       }
@@ -318,11 +400,12 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
   }
 
   void _calculateFuelCost() {
-    if (_fuelFormKey.currentState == null || !_fuelFormKey.currentState!.validate()) return;
+    if (_fuelFormKey.currentState != null && !_fuelFormKey.currentState!.validate()) return;
 
     double dailyKm = double.tryParse(_dailyDistanceController.text.trim()) ?? 0;
     int days = int.tryParse(_daysController.text.trim()) ?? 0;
     double consumption = double.tryParse(_consumptionController.text.trim()) ?? 0;
+    if (dailyKm <= 0 || days <= 0 || consumption <= 0) return;
     double energyRate = _isEvMode 
         ? (_evTariffRates[_selectedEvTariff] ?? 0.57) 
         : (_liveFuelPrices[_selectedFuelType] ?? 2.05);
@@ -521,7 +604,13 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildDropdownField('Fuel Type', _fuelType, ['Petrol/Diesel', 'EV'],
-                (val) => setState(() { _fuelType = val!; _roadTax = 0; })),
+                (val) => setState(() {
+                  _fuelType = val!;
+                  _roadTax = 0;
+                  if (widget.car == null) {
+                    _isEvMode = (_fuelType == 'EV');
+                  }
+                })),
             _buildDropdownField('Region', _region,
                 ['Peninsular Malaysia', 'Sabah', 'Sarawak', 'Special Regions (Langkawi/Labuan)'],
                 (val) => setState(() { _region = val!; _roadTax = 0; })),
@@ -601,6 +690,9 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
                       onTap: () {
                         setState(() {
                           _isEvMode = false;
+                          if (widget.car == null) {
+                            _fuelType = 'Petrol/Diesel';
+                          }
                           if (_consumptionController.text.isEmpty || _consumptionController.text == '15.0') {
                             _consumptionController.text = '6.0';
                           }
@@ -608,7 +700,7 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
                             _tankCapacityController.text = '45';
                           }
                         });
-                        if (_monthlyFuelCost > 0) _calculateFuelCost();
+                        _calculateFuelCost();
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 10),
@@ -642,6 +734,9 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
                       onTap: () {
                         setState(() {
                           _isEvMode = true;
+                          if (widget.car == null) {
+                            _fuelType = 'EV';
+                          }
                           if (_consumptionController.text.isEmpty || _consumptionController.text == '6.0') {
                             _consumptionController.text = '15.0';
                           }
@@ -649,7 +744,7 @@ class _OwnershipCalculatorsState extends State<OwnershipCalculators> with Single
                             _tankCapacityController.text = '60';
                           }
                         });
-                        if (_monthlyFuelCost > 0) _calculateFuelCost();
+                        _calculateFuelCost();
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 10),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 import '../services/data_service.dart';
 import '../services/api_service.dart';
@@ -110,10 +111,13 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
       final results = await Future.wait([
         _dataService.fetchLatestFuelPrices(),
         _dataService.fetchCarsAsMap(),
+        SharedPreferences.getInstance(),
       ]);
 
       final fuelData = results[0] as Map<String, dynamic>;
       _cars = results[1] as List<Map<String, dynamic>>;
+      final prefs = results[2] as SharedPreferences;
+      final savedFuel = prefs.getString('preferred_fuel');
 
       if (mounted) {
         setState(() {
@@ -122,14 +126,58 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
             _liveFuelPrices.remove('_date');
           }
 
-          if (_liveFuelPrices.containsKey('RON95 (Floating)')) {
-             _selectedFuelType = 'RON95 (Floating)';
+          final bool isEvPreferred = savedFuel != null &&
+              (savedFuel.contains('EV') || savedFuel.contains('Electric'));
+
+          if (isEvPreferred) {
+            final evIndex = _cars.indexWhere((c) =>
+                c['isEV'] == true ||
+                c['is_ev'] == true ||
+                c['fuelType'] == 'Electric' ||
+                c['fuel_type'] == 'Electric');
+            if (evIndex != -1) {
+              _selectedCar = _cars[evIndex];
+            } else if (_cars.isNotEmpty) {
+              _selectedCar = _cars[0];
+            }
+            if (_selectedCar != null) {
+              _consumption = (_selectedCar!['fuelConsumption'] as num?)?.toDouble() ?? 15.0;
+            }
+          } else {
+            if (savedFuel != null && savedFuel.isNotEmpty && _liveFuelPrices.containsKey(savedFuel)) {
+              _selectedFuelType = savedFuel;
+            } else if (_liveFuelPrices.containsKey('RON95 (Floating)')) {
+              _selectedFuelType = 'RON95 (Floating)';
+            }
+            _fuelPrice = (_liveFuelPrices[_selectedFuelType] as num?)?.toDouble() ?? 2.05;
+
+            final isDiesel = savedFuel != null && savedFuel.contains('Diesel');
+            if (isDiesel) {
+              final dieselIndex = _cars.indexWhere((c) =>
+                  (c['fuelType']?.toString().toLowerCase().contains('diesel') ?? false) ||
+                  (c['fuel_type']?.toString().toLowerCase().contains('diesel') ?? false));
+              if (dieselIndex != -1) {
+                _selectedCar = _cars[dieselIndex];
+              } else {
+                final nonEvIndex = _cars.indexWhere((c) =>
+                    !(c['isEV'] == true || c['is_ev'] == true || c['fuelType'] == 'Electric' || c['fuel_type'] == 'Electric'));
+                _selectedCar = nonEvIndex != -1 ? _cars[nonEvIndex] : (_cars.isNotEmpty ? _cars[0] : null);
+              }
+            } else {
+              final nonEvIndex = _cars.indexWhere((c) =>
+                  !(c['isEV'] == true || c['is_ev'] == true || c['fuelType'] == 'Electric' || c['fuel_type'] == 'Electric'));
+              _selectedCar = nonEvIndex != -1 ? _cars[nonEvIndex] : (_cars.isNotEmpty ? _cars[0] : null);
+            }
+
+            if (_selectedCar != null) {
+              _consumption = (_selectedCar!['fuelConsumption'] as num?)?.toDouble() ?? 6.0;
+            }
           }
-          _fuelPrice = (_liveFuelPrices[_selectedFuelType] as num?)?.toDouble() ?? 2.05;
-          if (_cars.isNotEmpty) {
-            _selectedCar = _cars[0];
-            _consumption = (_selectedCar!['fuelConsumption'] as num).toDouble();
+
+          if (_distKM > 0) {
+            _calculateRoute();
           }
+
           _isLoading = false;
         });
         
@@ -785,7 +833,13 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
             if (result != null && result is Map<String, dynamic>) {
               setState(() {
                 _selectedCar = result;
-                _consumption = (result['fuelConsumption'] as num?)?.toDouble() ?? 6.0;
+                _consumption = (result['fuelConsumption'] as num?)?.toDouble() ?? (_isCurrentCarEv ? 15.0 : 6.0);
+                final bool isDieselCar = (result['fuelType']?.toString().toLowerCase().contains('diesel') ?? false) ||
+                    (result['fuel_type']?.toString().toLowerCase().contains('diesel') ?? false);
+                if (isDieselCar && !_selectedFuelType.contains('Diesel')) {
+                  _selectedFuelType = _liveFuelPrices.containsKey('Diesel (Peninsular)') ? 'Diesel (Peninsular)' : _selectedFuelType;
+                  _fuelPrice = (_liveFuelPrices[_selectedFuelType] as num?)?.toDouble() ?? _fuelPrice;
+                }
                 _calculateRoute();
               });
             }
