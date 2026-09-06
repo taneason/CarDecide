@@ -895,8 +895,32 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
 
     try {
       String? newAvatarUrl = widget.avatarUrl;
+      final List<String> oldFilesToRemove = [];
 
       if (_selectedImage != null) {
+        final oldUrl = widget.avatarUrl;
+        if (oldUrl != null && oldUrl.isNotEmpty) {
+          final uri = Uri.tryParse(oldUrl);
+          if (uri != null && uri.pathSegments.contains('avatars')) {
+            final avatarsIndex = uri.pathSegments.indexOf('avatars');
+            final oldPath = uri.pathSegments.sublist(avatarsIndex + 1).join('/');
+            if (oldPath.isNotEmpty) {
+              oldFilesToRemove.add(oldPath);
+            }
+          }
+        }
+
+        try {
+          final existing = await _supabase.storage.from('avatars').list();
+          for (final f in existing) {
+            if (f.name.startsWith('${widget.userId}_') || f.name.startsWith('${widget.userId}.')) {
+              if (!oldFilesToRemove.contains(f.name)) {
+                oldFilesToRemove.add(f.name);
+              }
+            }
+          }
+        } catch (_) {}
+
         final ext = _selectedImage!.path.split('.').last;
         final fileName = '${widget.userId}_${DateTime.now().millisecondsSinceEpoch}.$ext';
         
@@ -908,6 +932,17 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
         'full_name': _nameController.text.trim(),
         if (_selectedImage != null) 'avatar_url': newAvatarUrl,
       }).eq('id', widget.userId);
+
+      if (_selectedImage != null && oldFilesToRemove.isNotEmpty) {
+        try {
+          oldFilesToRemove.removeWhere((name) => newAvatarUrl != null && newAvatarUrl.contains(name));
+          if (oldFilesToRemove.isNotEmpty) {
+            await _supabase.storage.from('avatars').remove(oldFilesToRemove);
+          }
+        } catch (e) {
+          debugPrint('Error deleting old avatar files: $e');
+        }
+      }
 
       if (mounted) nav.pop(true);
     } catch (e) {
