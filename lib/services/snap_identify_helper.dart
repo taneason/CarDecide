@@ -127,11 +127,11 @@ class SnapIdentifyHelper {
       );
     } else if (car != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Identified as  !'), backgroundColor: AppColors.accentGreen),
+        SnackBar(content: Text('Identified as ${car.fullName}!'), backgroundColor: AppColors.accentGreen),
       );
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => CarDetailScreen(car: car!.toJson())),
+        MaterialPageRoute(builder: (_) => CarDetailScreen(car: car.toJson())),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
