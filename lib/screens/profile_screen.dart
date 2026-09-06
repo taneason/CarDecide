@@ -921,11 +921,15 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
           }
         } catch (_) {}
 
-        final ext = _selectedImage!.path.split('.').last;
-        final fileName = '${widget.userId}_${DateTime.now().millisecondsSinceEpoch}.$ext';
+        final fileName = '${widget.userId}.jpg';
         
-        await _supabase.storage.from('avatars').upload(fileName, _selectedImage!);
-        newAvatarUrl = _supabase.storage.from('avatars').getPublicUrl(fileName);
+        await _supabase.storage.from('avatars').upload(
+          fileName,
+          _selectedImage!,
+          fileOptions: const FileOptions(upsert: true),
+        );
+        final basePublicUrl = _supabase.storage.from('avatars').getPublicUrl(fileName);
+        newAvatarUrl = '$basePublicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
       }
 
       await _supabase.from('profiles').update({
