@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../constants/app_constants.dart';
 import '../services/car_api_service.dart';
+import '../services/data_service.dart';
 import 'login_screen.dart';
 import 'change_password_screen.dart';
 import 'favourites_screen.dart';
@@ -19,6 +20,7 @@ class ProfileScreen extends StatefulWidget {
 
 class ProfileScreenState extends State<ProfileScreen> {
   final _authService = AuthService();
+  final _dataService = DataService();
   final _supabase = Supabase.instance.client;
   Map<String, dynamic>? _profileData;
   bool _isLoading = true;
@@ -123,14 +125,11 @@ class ProfileScreenState extends State<ProfileScreen> {
       final user = _authService.currentUser;
       if (user == null) return;
 
-      final response = await _supabase
-          .from('favourite_indicators')
-          .select('id')
-          .eq('user_id', user.id);
+      final favIds = await _dataService.getFavouriteCarIds();
       
       if (mounted) {
         setState(() {
-          _favouriteCount = (response as List).length;
+          _favouriteCount = favIds.length;
         });
       }
     } catch (e) {

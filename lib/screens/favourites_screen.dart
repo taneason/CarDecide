@@ -42,26 +42,7 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
         return;
       }
 
-      final favResponse = await _supabase
-          .from('favourite_indicators')
-          .select('car_id')
-          .eq('user_id', user.id);
-
-      final List<dynamic> favList = favResponse as List<dynamic>;
-      final favCarIds = favList.map((e) => e['car_id'].toString()).toSet();
-
-      if (favCarIds.isEmpty) {
-        if (mounted) {
-          setState(() {
-            _favouriteCars = [];
-            _isLoading = false;
-          });
-        }
-        return;
-      }
-
-      final allCars = await _dataService.fetchCars();
-      final favouriteCars = allCars.where((car) => favCarIds.contains(car.id)).toList();
+      final favouriteCars = await _dataService.fetchFavouriteCars();
 
       if (mounted) {
         setState(() {
@@ -236,16 +217,26 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
                 icon: const Icon(Icons.favorite, color: AppColors.accentRed),
                 onPressed: () async {
                   final user = _authService.currentUser;
-                  if (user == null) return;
+                  if (user == null || car.id == null) return;
                   try {
                     await _supabase
                         .from('favourite_indicators')
                         .delete()
                         .eq('user_id', user.id)
                         .eq('car_id', car.id as Object);
+                    final favIds = await _dataService.getFavouriteCarIds();
+                    favIds.remove(car.id.toString());
+                    await _dataService.saveCachedFavouriteIds(user.id, favIds);
                     _loadFavourites();
                   } catch (e) {
-                    debugPrint('Error removing fav: $e');
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('No internet connection. Cannot update saved cars while offline.'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                    }
                   }
                 },
               ),

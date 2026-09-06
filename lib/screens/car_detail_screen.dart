@@ -6,6 +6,7 @@ import 'ownership_calculators.dart';
 import 'ai_chat_screen.dart';
 import 'main_screen.dart';
 import '../services/auth_service.dart';
+import '../services/data_service.dart';
 
 class CarDetailScreen extends StatefulWidget {
   final Map<String, dynamic> car;
@@ -20,6 +21,7 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
   bool _isFavourite = false;
   final _supabase = Supabase.instance.client;
   final _authService = AuthService();
+  final _dataService = DataService();
   bool _isLoadingFav = true;
   late Map<String, dynamic> _car;
 
@@ -71,16 +73,10 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
     }
 
     try {
-      final response = await _supabase
-          .from('favourite_indicators')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('car_id', widget.car['id'])
-          .maybeSingle();
-
+      final favIds = await _dataService.getFavouriteCarIds();
       if (mounted) {
         setState(() {
-          _isFavourite = response != null;
+          _isFavourite = favIds.contains(carId.toString());
           _isLoadingFav = false;
         });
       }
@@ -118,12 +114,22 @@ class _CarDetailScreenState extends State<CarDetailScreen> {
           'car_id': carId,
         });
       }
+      final favIds = await _dataService.getFavouriteCarIds();
+      if (wasFavourite) {
+        favIds.remove(carId.toString());
+      } else {
+        favIds.add(carId.toString());
+      }
+      await _dataService.saveCachedFavouriteIds(user.id, favIds);
     } catch (e) {
       debugPrint('Error toggling favourite: $e');
       if (mounted) {
         setState(() => _isFavourite = wasFavourite);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update favourite: $e'), backgroundColor: AppColors.accentRed),
+          const SnackBar(
+            content: Text('No internet connection. Cannot update saved cars while offline.'),
+            backgroundColor: Colors.orange,
+          ),
         );
       }
     }

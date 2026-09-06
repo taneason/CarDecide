@@ -90,7 +90,6 @@ class DataService {
 
 
   Future<List<CarModel>> fetchCars({bool forceRefresh = false}) async {
-
     if (!forceRefresh) {
       final cachedCars = await _carApiService.getCachedCars();
       if (cachedCars.isNotEmpty) {
@@ -100,6 +99,7 @@ class DataService {
     }
 
     List<CarModel> carList = [];
+    bool supabaseSuccess = false;
 
     try {
       final List<dynamic> supabaseData = await _supabase
@@ -110,9 +110,17 @@ class DataService {
 
       if (supabaseData.isNotEmpty) {
         carList = supabaseData.map((e) => CarModel.fromJson(e)).toList();
+        supabaseSuccess = true;
       }
     } catch (e) {
       debugPrint('Supabase car fetch failed or table not found: $e');
+    }
+
+    if (!supabaseSuccess) {
+      final cachedCars = await _carApiService.getCachedCars();
+      if (cachedCars.isNotEmpty) {
+        return _carApiService.healCarImages(cachedCars);
+      }
     }
 
     if (carList.isEmpty) {
@@ -161,9 +169,10 @@ class DataService {
 
     carList = _carApiService.healCarImages(carList);
 
-    await _carApiService.saveCarsToCache(carList);
-
-    saveCarsToSupabase(carList);
+    if (supabaseSuccess) {
+      await _carApiService.saveCarsToCache(carList);
+      saveCarsToSupabase(carList);
+    }
 
     return carList;
   }
@@ -201,6 +210,45 @@ class DataService {
     } catch (e) {
       debugPrint('Supabase save failed (Check permissions or connection): $e');
     }
+  }
+
+  Future<Set<String>> getFavouriteCarIds() async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return {};
+
+    final prefs = await SharedPreferences.getInstance();
+    final cacheKey = 'cached_favourite_ids_${user.id}';
+
+    try {
+      final favResponse = await _supabase
+          .from('favourite_indicators')
+          .select('car_id')
+          .eq('user_id', user.id)
+          .timeout(const Duration(seconds: 4));
+
+      final List<dynamic> favList = favResponse as List<dynamic>;
+      final favCarIds = favList.map((e) => e['car_id'].toString()).toSet();
+      await prefs.setStringList(cacheKey, favCarIds.toList());
+      return favCarIds;
+    } catch (e) {
+      debugPrint('Error fetching live favourites, loading from cache: $e');
+      final cachedList = prefs.getStringList(cacheKey) ?? [];
+      return cachedList.toSet();
+    }
+  }
+
+  Future<void> saveCachedFavouriteIds(String userId, Set<String> favIds) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('cached_favourite_ids_$userId', favIds.toList());
+    } catch (_) {}
+  }
+
+  Future<List<CarModel>> fetchFavouriteCars() async {
+    final favIds = await getFavouriteCarIds();
+    if (favIds.isEmpty) return [];
+    final allCars = await fetchCars();
+    return allCars.where((car) => favIds.contains(car.id)).toList();
   }
 
   Future<List<Map<String, dynamic>>> fetchCarsAsMap() async {

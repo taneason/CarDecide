@@ -56,22 +56,7 @@ class _CarBrowseScreenState extends State<CarBrowseScreen> {
     setState(() => _isLoading = true);
     
     final cars = await _dataService.fetchCars(forceRefresh: forceRefresh);
-    
-    Set<String> favs = {};
-    try {
-      final user = _authService.currentUser;
-      if (user != null) {
-        final favResponse = await _supabase
-            .from('favourite_indicators')
-            .select('car_id')
-            .eq('user_id', user.id);
-        
-        final List<dynamic> favList = favResponse as List<dynamic>;
-        favs = favList.map((e) => e['car_id'].toString()).toSet();
-      }
-    } catch (e) {
-      debugPrint('Error fetching favourites: $e');
-    }
+    final favs = await _dataService.getFavouriteCarIds();
     
     if (mounted) {
       setState(() {
@@ -90,14 +75,25 @@ class _CarBrowseScreenState extends State<CarBrowseScreen> {
   Future<void> _syncFromSupabaseInBackground() async {
     try {
       final freshCars = await _dataService.fetchCars(forceRefresh: true);
+      final freshFavs = await _dataService.getFavouriteCarIds();
       if (!mounted) return;
-      if (freshCars.length != _allCars.length || !_areCarListsEqual(freshCars, _allCars)) {
+      final bool carsChanged = freshCars.isNotEmpty &&
+          (freshCars.length != _allCars.length || !_areCarListsEqual(freshCars, _allCars));
+      final bool favsChanged = !_areSetsEqual(freshFavs, _favouriteIds);
+
+      if (carsChanged || favsChanged) {
         setState(() {
-          _allCars = freshCars;
+          if (carsChanged) _allCars = freshCars;
+          if (favsChanged) _favouriteIds = freshFavs;
           _applyFilters();
         });
       }
     } catch (_) {}
+  }
+
+  bool _areSetsEqual(Set<String> a, Set<String> b) {
+    if (a.length != b.length) return false;
+    return a.containsAll(b);
   }
 
   bool _areCarListsEqual(List<CarModel> a, List<CarModel> b) {
@@ -268,6 +264,7 @@ class _CarBrowseScreenState extends State<CarBrowseScreen> {
           'car_id': car.id,
         });
       }
+      await _dataService.saveCachedFavouriteIds(user.id, _favouriteIds);
     } catch (e) {
       debugPrint('Error toggling favourite: $e');
       if (mounted) {
@@ -280,7 +277,10 @@ class _CarBrowseScreenState extends State<CarBrowseScreen> {
           _applyFilters();
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update: $e'), backgroundColor: AppColors.accentRed),
+          const SnackBar(
+            content: Text('No internet connection. Cannot update saved cars while offline.'),
+            backgroundColor: Colors.orange,
+          ),
         );
       }
     }
