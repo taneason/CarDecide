@@ -81,6 +81,36 @@ class _CarBrowseScreenState extends State<CarBrowseScreen> {
         _isLoading = false;
       });
     }
+
+    if (!forceRefresh) {
+      _syncFromSupabaseInBackground();
+    }
+  }
+
+  Future<void> _syncFromSupabaseInBackground() async {
+    try {
+      final freshCars = await _dataService.fetchCars(forceRefresh: true);
+      if (!mounted) return;
+      if (freshCars.length != _allCars.length || !_areCarListsEqual(freshCars, _allCars)) {
+        setState(() {
+          _allCars = freshCars;
+          _applyFilters();
+        });
+      }
+    } catch (_) {}
+  }
+
+  bool _areCarListsEqual(List<CarModel> a, List<CarModel> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id ||
+          a[i].make != b[i].make ||
+          a[i].model != b[i].model ||
+          a[i].price != b[i].price) {
+        return false;
+      }
+    }
+    return true;
   }
 
   Future<void> _performDeepSearch() async {
