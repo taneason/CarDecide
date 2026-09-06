@@ -1,16 +1,111 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
+import '../services/data_service.dart';
 
-class DecisionSummaryScreen extends StatelessWidget {
+class DecisionSummaryScreen extends StatefulWidget {
   final List<Map<String, dynamic>> cars;
 
   const DecisionSummaryScreen({super.key, required this.cars});
+
+  @override
+  State<DecisionSummaryScreen> createState() => _DecisionSummaryScreenState();
+}
+
+class _DecisionSummaryScreenState extends State<DecisionSummaryScreen> {
+  final DataService _dataService = DataService();
+  final Map<String, double> _liveFuelPrices = {
+    'RON95 (Floating)': 2.05,
+    'RON97': 3.19,
+    'Diesel (Peninsular)': 2.95,
+    'Diesel (Sbh/Swk)': 2.15,
+    'RON95 (BUDI 95)': 1.95,
+    'RON95 (SKPS)': 1.95,
+    'Diesel (SKDS)': 2.15,
+    'Diesel (BUDI)': 2.15,
+  };
+  String? _preferredFuel;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFuelData();
+  }
+
+  Future<void> _loadFuelData() async {
+    try {
+      final results = await Future.wait([
+        _dataService.fetchLatestFuelPrices(),
+        SharedPreferences.getInstance(),
+      ]);
+      final prices = results[0] as Map<String, dynamic>;
+      final prefs = results[1] as SharedPreferences;
+      final savedFuel = prefs.getString('preferred_fuel');
+
+      if (mounted) {
+        setState(() {
+          if (prices.isNotEmpty) {
+            prices.forEach((key, val) {
+              if (val is num) {
+                _liveFuelPrices[key] = val.toDouble();
+              }
+            });
+          }
+          _preferredFuel = savedFuel;
+        });
+      }
+    } catch (_) {}
+  }
 
   bool _isCarEV(Map<String, dynamic> car) {
     return car['isEV'] == true ||
         car['is_ev'] == true ||
         (car['fuelType']?.toString().toLowerCase().contains('ev') ?? false) ||
         (car['fuel_type']?.toString().toLowerCase().contains('ev') ?? false);
+  }
+
+  Map<String, dynamic> _getFuelInfo(Map<String, dynamic> car) {
+    final bool isEV = _isCarEV(car);
+    if (isEV) {
+      return {'rate': 0.57, 'label': 'Est. Charging (TNB Home)'};
+    }
+    final String carFuel = (car['fuelType'] ?? car['fuel_type'] ?? '').toString().toLowerCase();
+    if (carFuel.contains('diesel')) {
+      if (_preferredFuel != null && _preferredFuel!.contains('Diesel') && _liveFuelPrices.containsKey(_preferredFuel)) {
+        return {
+          'rate': _liveFuelPrices[_preferredFuel] ?? 2.95,
+          'label': 'Est. Fuel ($_preferredFuel)',
+        };
+      }
+      final double rate = _liveFuelPrices['Diesel (Peninsular)'] ?? 2.95;
+      return {'rate': rate, 'label': 'Est. Fuel (Diesel)'};
+    }
+
+    if (_preferredFuel != null &&
+        !_preferredFuel!.contains('EV') &&
+        !_preferredFuel!.contains('Diesel') &&
+        _liveFuelPrices.containsKey(_preferredFuel)) {
+      return {
+        'rate': _liveFuelPrices[_preferredFuel] ?? 2.05,
+        'label': 'Est. Fuel ($_preferredFuel)',
+      };
+    }
+
+    final double rate = _liveFuelPrices['RON95 (Floating)'] ?? 2.05;
+    return {'rate': rate, 'label': 'Est. Fuel (RON95)'};
+  }
+
+  double _calculateCarTotal(Map<String, dynamic> car) {
+    final bool isEV = _isCarEV(car);
+    final double price = (car['price'] as num?)?.toDouble() ?? 0.0;
+    final double principal = price * 0.9;
+    final double monthlyLoan = price > 0 ? ((principal + principal * 0.035 * 9) / (9 * 12)) : 0.0;
+    final double cons = (car['fuelConsumption'] ?? car['fuel_consumption'] as num?)?.toDouble() ?? (isEV ? 15.0 : 6.0);
+    final fuelInfo = _getFuelInfo(car);
+    final double rate = (fuelInfo['rate'] as num).toDouble();
+    final double monthlyEnergy = (1500.0 / 100.0) * cons * rate;
+    final double maintenance = isEV ? 40.0 : 80.0;
+    return monthlyLoan + monthlyEnergy + maintenance;
   }
 
   @override
@@ -39,7 +134,7 @@ class DecisionSummaryScreen extends StatelessWidget {
               style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
-            ...cars.map((car) => _buildSummaryCard(car)),
+            ...widget.cars.map((car) => _buildSummaryCard(car)),
             const SizedBox(height: 24),
             _buildPublicTransportComparison(),
             const SizedBox(height: 32),
@@ -55,9 +150,10 @@ class DecisionSummaryScreen extends StatelessWidget {
     final double principal = price * 0.9;
     final double monthlyLoan = price > 0 ? ((principal + principal * 0.035 * 9) / (9 * 12)) : 0.0;
     final double cons = (car['fuelConsumption'] ?? car['fuel_consumption'] as num?)?.toDouble() ?? (isEV ? 15.0 : 6.0);
-    final double monthlyEnergy = isEV
-        ? (1500.0 / 100.0) * cons * 0.57
-        : (1500.0 / 100.0) * cons * 2.05;
+    final fuelInfo = _getFuelInfo(car);
+    final double rate = (fuelInfo['rate'] as num).toDouble();
+    final String energyLabel = fuelInfo['label'] as String;
+    final double monthlyEnergy = (1500.0 / 100.0) * cons * rate;
     final double maintenance = isEV ? 40.0 : 80.0;
     final double total = monthlyLoan + monthlyEnergy + maintenance;
 
@@ -120,7 +216,7 @@ class DecisionSummaryScreen extends StatelessWidget {
           const Divider(height: 24),
           _buildCostRow('Monthly Loan (9 yrs)', 'RM ${monthlyLoan.toStringAsFixed(0)}'),
           _buildCostRow(
-            isEV ? 'Est. Charging (TNB Home)' : 'Est. Fuel (RON95)',
+            energyLabel,
             'RM ${monthlyEnergy.toStringAsFixed(0)}',
           ),
           _buildCostRow(
@@ -157,6 +253,16 @@ class DecisionSummaryScreen extends StatelessWidget {
   }
 
   Widget _buildPublicTransportComparison() {
+    double minTotal = double.infinity;
+    for (final car in widget.cars) {
+      final total = _calculateCarTotal(car);
+      if (total < minTotal) {
+        minTotal = total;
+      }
+    }
+    final double savings = minTotal != double.infinity ? (minTotal - 50.0).clamp(0.0, double.infinity) : 1000.0;
+    final String savingsStr = savings > 0 ? 'RM ${savings.toStringAsFixed(0)}' : 'RM 1,000';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -173,10 +279,10 @@ class DecisionSummaryScreen extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.accentGreen),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'A monthly My50 unlimited travel pass (RM50) could save you over RM1,000 per month compared to personal car ownership.',
+          Text(
+            'A monthly My50 unlimited travel pass (RM50) could save you over $savingsStr per month compared to personal car ownership.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, height: 1.4, color: AppColors.textPrimary),
+            style: const TextStyle(fontSize: 13, height: 1.4, color: AppColors.textPrimary),
           ),
         ],
       ),
