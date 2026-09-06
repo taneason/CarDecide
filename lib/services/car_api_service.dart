@@ -240,4 +240,26 @@ class CarApiService {
       debugPrint('Supabase background sync skipped/failed: $e');
     }
   }
+
+  static Future<void> cleanTemporaryImageCache() async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      if (await tempDir.exists()) {
+        final List<FileSystemEntity> entities = tempDir.listSync();
+        for (final entity in entities) {
+          if (entity is File) {
+            final name = entity.path.split('/').last.split('\\').last.toLowerCase();
+            if (name.startsWith('scaled_') ||
+                name.startsWith('image_picker') ||
+                ((name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png') || name.endsWith('.webp')) &&
+                    !name.contains('cars_cache'))) {
+              try {
+                entity.deleteSync();
+              } catch (_) {}
+            }
+          }
+        }
+      }
+    } catch (_) {}
+  }
 }

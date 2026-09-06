@@ -6,6 +6,7 @@ import 'screens/main_screen.dart';
 
 import 'constants/app_constants.dart';
 import 'services/config_service.dart';
+import 'services/car_api_service.dart';
 
 const String _defaultSupabaseUrl = 'https://nvfirkvoanegxbnycesj.supabase.co';
 const String _defaultSupabaseAnonKey = 'sb_publishable_0EXms7Cps158LZfOPnuOWw_Gs_zElgJ';
@@ -33,6 +34,7 @@ void main() async {
 
 
     await ConfigService.initialize();
+    CarApiService.cleanTemporaryImageCache();
   } catch (e) {
     debugPrint("Startup Initialization Error: $e");
   }

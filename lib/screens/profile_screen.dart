@@ -840,6 +840,13 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   void dispose() {
     _nameController.dispose();
     _passwordController.dispose();
+    if (_selectedImage != null) {
+      try {
+        if (_selectedImage!.existsSync()) {
+          _selectedImage!.deleteSync();
+        }
+      } catch (_) {}
+    }
     super.dispose();
   }
 
@@ -879,6 +886,13 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
         imageQuality: 85,
       );
       if (pickedFile != null) {
+        if (_selectedImage != null) {
+          try {
+            if (_selectedImage!.existsSync()) {
+              _selectedImage!.deleteSync();
+            }
+          } catch (_) {}
+        }
         setState(() => _selectedImage = File(pickedFile.path));
       }
     } catch (e) {

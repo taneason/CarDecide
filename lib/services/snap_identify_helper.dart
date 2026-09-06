@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../constants/app_constants.dart';
@@ -38,6 +39,12 @@ class SnapIdentifyHelper {
     if (image == null) return;
 
     final bytes = await image.readAsBytes();
+    try {
+      final file = File(image.path);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (_) {}
     String mimeType = 'image/jpeg';
     if (image.name.toLowerCase().endsWith('.png')) {
       mimeType = 'image/png';
