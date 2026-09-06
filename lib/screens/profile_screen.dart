@@ -926,7 +926,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
         await _supabase.storage.from('avatars').upload(
           fileName,
           _selectedImage!,
-          fileOptions: const FileOptions(upsert: true),
+          fileOptions: const FileOptions(upsert: true, cacheControl: '0'),
         );
         final basePublicUrl = _supabase.storage.from('avatars').getPublicUrl(fileName);
         newAvatarUrl = '$basePublicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
