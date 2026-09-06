@@ -146,12 +146,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _showForgotPasswordDialog() {
     final emailCtrl = TextEditingController(text: _emailController.text);
+    final nav = Navigator.of(context);
     showDialog(
       context: context,
       builder: (ctx) {
         String? dialogEmailError;
         return StatefulBuilder(
-          builder: (context, setStateDialog) {
+          builder: (dialogCtx, setStateDialog) {
             return Dialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               backgroundColor: Colors.white,
@@ -208,16 +209,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               Navigator.pop(ctx);
                               try {
                                 await _authService.sendPasswordResetOtp(email);
-                                if (mounted) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (_) => OtpVerificationScreen(email: email, isRecovery: true)),
-                                  );
-                                }
-                              } catch (e) {
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e'), backgroundColor: AppColors.accentRed));
-                                }
+                              } catch (_) {}
+                              if (mounted) {
+                                nav.push(
+                                  MaterialPageRoute(builder: (_) => OtpVerificationScreen(email: email, isRecovery: true)),
+                                );
                               }
                             },
                             child: const Text('Send OTP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),

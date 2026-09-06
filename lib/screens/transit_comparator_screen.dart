@@ -339,7 +339,7 @@ class _TransitComparatorScreenState extends State<TransitComparatorScreen> {
         }
         
 
-        _tollCost = _distKM > 10 ? (_distKM - 10) * 0.15 : 0;
+        _tollCost = _distKM > 10 ? (_distKM - 10) * 0.12 : 0;
         double effectiveRate = _isCurrentCarEv
             ? (_evTariffRates[_selectedEvTariff] ?? 0.57)
             : _fuelPrice;
