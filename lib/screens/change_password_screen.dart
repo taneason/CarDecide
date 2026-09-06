@@ -47,7 +47,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       final authResponse = await _supabase.auth.signInWithPassword(
         email: user.email!,
         password: _currentPasswordController.text,
-      );
+      ).timeout(const Duration(seconds: 6));
       
       if (authResponse.session == null) {
         throw Exception("Current password is incorrect");
@@ -55,7 +55,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
       await _supabase.auth.updateUser(UserAttributes(
         password: _newPasswordController.text,
-      ));
+      )).timeout(const Duration(seconds: 6));
 
       if (mounted) {
         nav.pop();
@@ -69,14 +69,30 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        String msg = e.toString();
-        if (msg.contains("Invalid login credentials")) {
+        final err = e.toString().toLowerCase();
+        final bool isOffline = err.contains('socketexception') ||
+            err.contains('failed host lookup') ||
+            err.contains('clientexception') ||
+            err.contains('network') ||
+            err.contains('timeout') ||
+            err.contains('connection refused') ||
+            err.contains('failed to connect') ||
+            err.contains('handshake') ||
+            err.contains('authretryablefetchexception');
+
+        String msg;
+        if (isOffline) {
+          msg = "No internet connection. Please check your network and try again.";
+        } else if (e.toString().contains("Invalid login credentials")) {
           msg = "Current password is incorrect";
+        } else {
+          msg = e.toString().replaceAll("Exception: ", "");
         }
+
         messenger.showSnackBar(
           SnackBar(
-            content: Text(msg.replaceAll("Exception: ", "")),
-            backgroundColor: AppColors.accentRed,
+            content: Text(msg),
+            backgroundColor: isOffline ? Colors.orange : AppColors.accentRed,
           ),
         );
       }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:convert';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../constants/app_constants.dart';
@@ -94,11 +96,26 @@ class ProfileScreenState extends State<ProfileScreen> {
         return;
       }
 
+      final prefs = await SharedPreferences.getInstance();
+      final cacheKey = 'cached_profile_${user.id}';
+      final cachedJson = prefs.getString(cacheKey);
+      if (cachedJson != null) {
+        try {
+          final Map<String, dynamic> localData = json.decode(cachedJson);
+          if (mounted) {
+            setState(() {
+              _profileData = localData;
+            });
+          }
+        } catch (_) {}
+      }
+
       final data = await _supabase
           .from('profiles')
           .select()
           .eq('id', user.id)
-          .single();
+          .single()
+          .timeout(const Duration(seconds: 4));
 
       if (mounted) {
         setState(() {
@@ -106,10 +123,11 @@ class ProfileScreenState extends State<ProfileScreen> {
           _isLoading = false;
         });
 
+        await prefs.setString(cacheKey, json.encode(data));
+
         if (data['preferred_fuel'] != null && (data['preferred_fuel'] as String).isNotEmpty) {
           final cloudFuel = data['preferred_fuel'] as String;
           setState(() => _preferredFuel = cloudFuel);
-          final prefs = await SharedPreferences.getInstance();
           await prefs.setString('preferred_fuel', cloudFuel);
         }
       }
@@ -529,7 +547,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                             radius: 46,
                             backgroundColor: AppColors.secondary,
                             backgroundImage: _profileData?['avatar_url'] != null 
-                                ? NetworkImage(_profileData!['avatar_url']) 
+                                ? CachedNetworkImageProvider(_profileData!['avatar_url']) 
                                 : null,
                             child: _profileData?['avatar_url'] == null
                                 ? Icon(
@@ -940,7 +958,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
         }
 
         try {
-          final existing = await _supabase.storage.from('avatars').list();
+          final existing = await _supabase.storage.from('avatars').list().timeout(const Duration(seconds: 4));
           for (final f in existing) {
             if (f.name.startsWith('${widget.userId}_') || f.name.startsWith('${widget.userId}.')) {
               if (!oldFilesToRemove.contains(f.name)) {
@@ -956,7 +974,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
           fileName,
           _selectedImage!,
           fileOptions: const FileOptions(upsert: true, cacheControl: '0'),
-        );
+        ).timeout(const Duration(seconds: 8));
         final basePublicUrl = _supabase.storage.from('avatars').getPublicUrl(fileName);
         newAvatarUrl = '$basePublicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
       }
@@ -964,13 +982,28 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
       await _supabase.from('profiles').update({
         'full_name': _nameController.text.trim(),
         if (_selectedImage != null) 'avatar_url': newAvatarUrl,
-      }).eq('id', widget.userId);
+      }).eq('id', widget.userId).timeout(const Duration(seconds: 6));
+
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final cacheKey = 'cached_profile_${widget.userId}';
+        final cached = prefs.getString(cacheKey);
+        Map<String, dynamic> localData = {};
+        if (cached != null) {
+          localData = json.decode(cached);
+        }
+        localData['full_name'] = _nameController.text.trim();
+        if (_selectedImage != null && newAvatarUrl != null) {
+          localData['avatar_url'] = newAvatarUrl;
+        }
+        await prefs.setString(cacheKey, json.encode(localData));
+      } catch (_) {}
 
       if (_selectedImage != null && oldFilesToRemove.isNotEmpty) {
         try {
           oldFilesToRemove.removeWhere((name) => newAvatarUrl != null && newAvatarUrl.contains(name));
           if (oldFilesToRemove.isNotEmpty) {
-            await _supabase.storage.from('avatars').remove(oldFilesToRemove);
+            await _supabase.storage.from('avatars').remove(oldFilesToRemove).timeout(const Duration(seconds: 4));
           }
         } catch (e) {
           debugPrint('Error deleting old avatar files: $e');
@@ -981,11 +1014,26 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
+        final err = e.toString().toLowerCase();
+        final bool isOffline = err.contains('socketexception') ||
+            err.contains('failed host lookup') ||
+            err.contains('clientexception') ||
+            err.contains('network') ||
+            err.contains('timeout') ||
+            err.contains('connection refused') ||
+            err.contains('failed to connect') ||
+            err.contains('handshake') ||
+            err.contains('authretryablefetchexception');
+
         messenger.showSnackBar(
           SnackBar(
-            content: Text('Failed to save: $e\n(Ensure "avatars" storage bucket exists and policies allow uploads)'),
-            backgroundColor: AppColors.accentRed,
-            duration: const Duration(seconds: 5),
+            content: Text(
+              isOffline
+                  ? 'No internet connection. Cannot update profile while offline.'
+                  : 'Failed to update profile. Please try again.',
+            ),
+            backgroundColor: isOffline ? Colors.orange : AppColors.accentRed,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -998,7 +1046,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     if (_selectedImage != null) {
       currentAvatar = FileImage(_selectedImage!);
     } else if (widget.avatarUrl != null) {
-      currentAvatar = NetworkImage(widget.avatarUrl!);
+      currentAvatar = CachedNetworkImageProvider(widget.avatarUrl!);
     }
 
     return Padding(
