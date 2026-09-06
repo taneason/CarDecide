@@ -5,17 +5,19 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class ConfigService {
   static String geminiApiKey = '';
   static String orsApiKey = '';
+  static String geoapifyApiKey = '';
 
   static Future<void> initialize() async {
     try {
       await dotenv.load(fileName: '.env');
       geminiApiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
       orsApiKey = dotenv.env['ORS_API_KEY'] ?? '';
+      geoapifyApiKey = dotenv.env['GEOAPIFY_API_KEY'] ?? '';
     } catch (_) {
       debugPrint('ConfigService: No local .env file found. Fetching from Supabase...');
     }
 
-    if (geminiApiKey.isEmpty || orsApiKey.isEmpty) {
+    if (geminiApiKey.isEmpty || orsApiKey.isEmpty || geoapifyApiKey.isEmpty) {
       try {
         final response = await Supabase.instance.client
             .from('app_config')
@@ -29,6 +31,8 @@ class ConfigService {
             geminiApiKey = v;
           } else if (k == 'ors_api_key' && orsApiKey.isEmpty) {
             orsApiKey = v;
+          } else if (k == 'geoapify_api_key' && geoapifyApiKey.isEmpty) {
+            geoapifyApiKey = v;
           }
         }
         debugPrint('ConfigService: Successfully retrieved API keys from Supabase.');
