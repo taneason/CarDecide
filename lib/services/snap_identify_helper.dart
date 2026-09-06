@@ -5,6 +5,7 @@ import '../constants/app_constants.dart';
 import '../models/car_model.dart';
 import 'dynamic_fetch_service.dart';
 import '../screens/car_detail_screen.dart';
+import 'car_api_service.dart';
 
 class SnapIdentifyHelper {
   static Future<void> handleSnapIdentify(BuildContext context) async {
@@ -44,7 +45,15 @@ class SnapIdentifyHelper {
       if (await file.exists()) {
         await file.delete();
       }
+      final parent = file.parent;
+      final parentName = parent.path.split('/').last.split('\\').last.toLowerCase();
+      if (parentName != 'cache' && parentName != 'fm_cache' && parentName != 'libcachedimagedata') {
+        if (await parent.exists()) {
+          await parent.delete(recursive: true);
+        }
+      }
     } catch (_) {}
+    CarApiService.cleanTemporaryImageCache();
     String mimeType = 'image/jpeg';
     if (image.name.toLowerCase().endsWith('.png')) {
       mimeType = 'image/png';

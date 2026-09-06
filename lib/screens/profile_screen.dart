@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../constants/app_constants.dart';
+import '../services/car_api_service.dart';
 import 'login_screen.dart';
 import 'change_password_screen.dart';
 import 'favourites_screen.dart';
@@ -845,8 +846,16 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
         if (_selectedImage!.existsSync()) {
           _selectedImage!.deleteSync();
         }
+        final parent = _selectedImage!.parent;
+        final parentName = parent.path.split('/').last.split('\\').last.toLowerCase();
+        if (parentName != 'cache' && parentName != 'fm_cache' && parentName != 'libcachedimagedata') {
+          if (parent.existsSync()) {
+            parent.deleteSync(recursive: true);
+          }
+        }
       } catch (_) {}
     }
+    CarApiService.cleanTemporaryImageCache();
     super.dispose();
   }
 
@@ -890,6 +899,13 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
           try {
             if (_selectedImage!.existsSync()) {
               _selectedImage!.deleteSync();
+            }
+            final parent = _selectedImage!.parent;
+            final parentName = parent.path.split('/').last.split('\\').last.toLowerCase();
+            if (parentName != 'cache' && parentName != 'fm_cache' && parentName != 'libcachedimagedata') {
+              if (parent.existsSync()) {
+                parent.deleteSync(recursive: true);
+              }
             }
           } catch (_) {}
         }

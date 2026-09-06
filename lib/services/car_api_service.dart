@@ -247,17 +247,13 @@ class CarApiService {
       if (await tempDir.exists()) {
         final List<FileSystemEntity> entities = tempDir.listSync();
         for (final entity in entities) {
-          if (entity is File) {
-            final name = entity.path.split('/').last.split('\\').last.toLowerCase();
-            if (name.startsWith('scaled_') ||
-                name.startsWith('image_picker') ||
-                ((name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png') || name.endsWith('.webp')) &&
-                    !name.contains('cars_cache'))) {
-              try {
-                entity.deleteSync();
-              } catch (_) {}
-            }
+          final name = entity.path.split('/').last.split('\\').last.toLowerCase();
+          if (name == 'fm_cache' || name == 'libcachedimagedata') {
+            continue;
           }
+          try {
+            entity.deleteSync(recursive: true);
+          } catch (_) {}
         }
       }
     } catch (_) {}
