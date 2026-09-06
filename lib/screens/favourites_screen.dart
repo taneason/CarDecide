@@ -29,7 +29,7 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
     _loadFavourites();
   }
 
-  Future<void> _loadFavourites() async {
+  Future<void> _loadFavourites({bool forceRefresh = false}) async {
     try {
       final user = _authService.currentUser;
       if (user == null) {
@@ -42,7 +42,7 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
         return;
       }
 
-      final favouriteCars = await _dataService.fetchFavouriteCars();
+      final favouriteCars = await _dataService.fetchFavouriteCars(forceRefresh: forceRefresh);
 
       if (mounted) {
         setState(() {
@@ -50,12 +50,36 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
           _isLoading = false;
         });
       }
+
+      if (!forceRefresh) {
+        _syncFavouritesInBackground();
+      }
     } catch (e) {
       debugPrint('Error loading favourites: $e');
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<void> _syncFavouritesInBackground() async {
+    try {
+      final freshFavs = await _dataService.fetchFavouriteCars(forceRefresh: true);
+      if (!mounted) return;
+      if (freshFavs.length != _favouriteCars.length || !_areListsEqual(freshFavs, _favouriteCars)) {
+        setState(() {
+          _favouriteCars = freshFavs;
+        });
+      }
+    } catch (_) {}
+  }
+
+  bool _areListsEqual(List<CarModel> a, List<CarModel> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id) return false;
+    }
+    return true;
   }
 
   @override
@@ -124,13 +148,17 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
                     ),
                   ),
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _favouriteCars.length,
-                  itemBuilder: (context, index) {
-                    final car = _favouriteCars[index];
-                    return _buildCarCard(car);
-                  },
+              : RefreshIndicator(
+                  onRefresh: () => _loadFavourites(forceRefresh: true),
+                  color: AppColors.primary,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _favouriteCars.length,
+                    itemBuilder: (context, index) {
+                      final car = _favouriteCars[index];
+                      return _buildCarCard(car);
+                    },
+                  ),
                 ),
     );
   }

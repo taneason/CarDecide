@@ -212,12 +212,19 @@ class DataService {
     }
   }
 
-  Future<Set<String>> getFavouriteCarIds() async {
+  Future<Set<String>> getFavouriteCarIds({bool forceRefresh = false}) async {
     final user = _supabase.auth.currentUser;
     if (user == null) return {};
 
     final prefs = await SharedPreferences.getInstance();
     final cacheKey = 'cached_favourite_ids_${user.id}';
+
+    if (!forceRefresh) {
+      final cachedList = prefs.getStringList(cacheKey);
+      if (cachedList != null) {
+        return cachedList.toSet();
+      }
+    }
 
     try {
       final favResponse = await _supabase
@@ -244,10 +251,10 @@ class DataService {
     } catch (_) {}
   }
 
-  Future<List<CarModel>> fetchFavouriteCars() async {
-    final favIds = await getFavouriteCarIds();
+  Future<List<CarModel>> fetchFavouriteCars({bool forceRefresh = false}) async {
+    final favIds = await getFavouriteCarIds(forceRefresh: forceRefresh);
     if (favIds.isEmpty) return [];
-    final allCars = await fetchCars();
+    final allCars = await fetchCars(forceRefresh: forceRefresh);
     return allCars.where((car) => favIds.contains(car.id)).toList();
   }
 

@@ -53,10 +53,12 @@ class _CarBrowseScreenState extends State<CarBrowseScreen> {
 
   Future<void> _loadData({bool forceRefresh = false}) async {
     if (!mounted) return;
-    setState(() => _isLoading = true);
+    if (_allCars.isEmpty) {
+      setState(() => _isLoading = true);
+    }
     
     final cars = await _dataService.fetchCars(forceRefresh: forceRefresh);
-    final favs = await _dataService.getFavouriteCarIds();
+    final favs = await _dataService.getFavouriteCarIds(forceRefresh: forceRefresh);
     
     if (mounted) {
       setState(() {
@@ -75,7 +77,7 @@ class _CarBrowseScreenState extends State<CarBrowseScreen> {
   Future<void> _syncFromSupabaseInBackground() async {
     try {
       final freshCars = await _dataService.fetchCars(forceRefresh: true);
-      final freshFavs = await _dataService.getFavouriteCarIds();
+      final freshFavs = await _dataService.getFavouriteCarIds(forceRefresh: true);
       if (!mounted) return;
       final bool carsChanged = freshCars.isNotEmpty &&
           (freshCars.length != _allCars.length || !_areCarListsEqual(freshCars, _allCars));
